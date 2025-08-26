@@ -1,122 +1,248 @@
-# README
+# Route93 E-commerce Store
 
-Welcome to [RedwoodJS](https://redwoodjs.com)!
+A full-featured e-commerce platform built with RedwoodJS, featuring modern UI, secure payments, comprehensive admin management, and production-ready deployment.
 
-> **Prerequisites**
->
-> - Redwood requires [Node.js](https://nodejs.org/en/) (=20.x) and [Yarn](https://yarnpkg.com/)
-> - Are you on Windows? For best results, follow our [Windows development setup](https://redwoodjs.com/docs/how-to/windows-development-setup) guide
+## 🚀 Features
 
-Start by installing dependencies:
+### Customer Experience
+- **🛍️ Product Browsing**: Browse products by categories and collections with beautiful UI
+- **🔍 Advanced Search**: Smart search with filters, sorting, and search suggestions
+- **🛒 Shopping Cart**: Persistent cart with local storage and database sync for authenticated users
+- **💳 Secure Checkout**: Stripe integration with comprehensive payment error handling
+- **📦 Order Management**: Order confirmation, tracking, and detailed order history
+- **👤 User Authentication**: Secure sign up/sign in with role-based access control
+- **📱 Responsive Design**: Mobile-first design that works on all devices
+
+### Admin Management
+- **📊 Dashboard**: Real-time analytics and business intelligence
+- **📦 Product Management**: Full CRUD operations with inventory tracking
+- **🏷️ Category Management**: Organize products into hierarchical categories
+- **📚 Collection Management**: Create themed product collections
+- **📋 Order Management**: Process orders with status updates and payment tracking
+- **👥 User Management**: Customer account management with role assignment
+- **📈 Inventory Tracking**: Stock level monitoring with low stock alerts
+- **📊 Analytics & Reports**: Sales reports, popular products, and user activity insights
+- **💳 Payment Tracking**: Failed payment monitoring and retry management
+
+### Advanced Features
+- **🔒 Role-Based Access Control**: Admin/Customer role separation
+- **❌ Failed Payment Handling**: Comprehensive error handling with retry logic
+- **🔄 Cart Synchronization**: Seamless cart sync between devices for logged-in users
+- **📧 Order Notifications**: Email confirmations and status updates
+- **🎨 Modern UI/UX**: Purple and green theme with Tailwind CSS
+- **⚡ Performance Optimized**: Fast loading with optimized queries and caching
+
+## 🛠️ Technology Stack
+
+- **Frontend**: React 18 with Tailwind CSS
+- **Backend**: RedwoodJS with GraphQL API
+- **Database**: PostgreSQL (production) / SQLite (development)
+- **Authentication**: RedwoodJS dbAuth with session management
+- **Payments**: Stripe with comprehensive error handling
+- **Deployment**: Vercel with automatic CI/CD
+- **Monitoring**: Health checks and error tracking ready
+
+## 🏃‍♂️ Quick Start
+
+### Prerequisites
+- Node.js 20.x
+- Yarn package manager
+- Git
+- PostgreSQL (for production)
+
+### Development Setup
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/your-username/route93.git
+   cd route93
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   yarn install
+   ```
+
+3. **Set up environment variables**:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Edit `.env` with your configuration:
+   ```bash
+   DATABASE_URL="file:./dev.db"
+   SESSION_SECRET="your-super-secret-session-key"
+   STRIPE_SECRET_KEY="sk_test_your_stripe_secret_key"
+   REDWOOD_ENV_STRIPE_PUBLISHABLE_KEY="pk_test_your_stripe_publishable_key"
+   ```
+
+4. **Set up the database**:
+   ```bash
+   yarn rw prisma migrate dev
+   yarn rw prisma db seed
+   ```
+
+5. **Start the development server**:
+   ```bash
+   yarn rw dev
+   ```
+
+6. **Open your browser** to `http://localhost:8910`
+
+## 👤 Default Accounts
+
+After seeding the database:
+
+### Admin Account
+- **Email**: `admin@route93.com`
+- **Password**: `admin123`
+- **Access**: Full admin dashboard and management features
+
+### Test Customer Account
+- **Email**: `customer@route93.com`
+- **Password**: `customer123`
+- **Access**: Customer features and order history
+
+## 🚀 Production Deployment
+
+### Deploy to Vercel (Recommended)
+
+1. **Prepare for deployment**:
+   ```bash
+   # Update database to PostgreSQL in schema.prisma
+   # Set up production environment variables
+   ```
+
+2. **Push to GitHub**:
+   ```bash
+   git add .
+   git commit -m "Ready for production deployment"
+   git push origin main
+   ```
+
+3. **Deploy to Vercel**:
+   - Connect your GitHub repository to Vercel
+   - Set environment variables in Vercel dashboard
+   - Deploy automatically on push to main
+
+📖 **See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.**
+
+### Environment Variables for Production
+
+Set these in your Vercel dashboard:
+
+```bash
+DATABASE_URL="postgresql://username:password@host:port/database"
+SESSION_SECRET="your-production-session-secret"
+STRIPE_SECRET_KEY="sk_live_your_live_stripe_key"
+REDWOOD_ENV_STRIPE_PUBLISHABLE_KEY="pk_live_your_live_stripe_key"
+```
+
+## 🔧 Development
+
+### Available Scripts
+
+```bash
+yarn rw dev          # Start development server
+yarn rw build        # Build for production
+yarn rw deploy vercel # Deploy to Vercel
+yarn rw test         # Run tests
+yarn rw storybook    # Start Storybook
+yarn rw prisma studio # Open Prisma Studio
+```
+
+### Project Structure
 
 ```
-yarn install
+route93/
+├── api/                 # Backend API
+│   ├── db/             # Database schema and migrations
+│   ├── src/
+│   │   ├── functions/  # Serverless functions
+│   │   ├── graphql/    # GraphQL schemas
+│   │   └── services/   # Business logic
+├── web/                # Frontend React app
+│   └── src/
+│       ├── components/ # React components
+│       ├── layouts/    # Page layouts
+│       ├── pages/      # Route components
+│       └── contexts/   # React contexts
+└── scripts/           # Utility scripts
 ```
 
-Then start the development server:
+## 🧪 Testing
 
-```
-yarn redwood dev
-```
+### Test Stripe Payments
 
-Your browser should automatically open to [http://localhost:8910](http://localhost:8910) where you'll see the Welcome Page, which links out to many great resources.
+Use these test card numbers:
+- **Success**: `4242 4242 4242 4242`
+- **Declined**: `4000 0000 0000 0002`
+- **Insufficient Funds**: `4000 0000 0000 9995`
 
-> **The Redwood CLI**
->
-> Congratulations on running your first Redwood CLI command! From dev to deploy, the CLI is with you the whole way. And there's quite a few commands at your disposal:
->
-> ```
-> yarn redwood --help
-> ```
->
-> For all the details, see the [CLI reference](https://redwoodjs.com/docs/cli-commands).
+### Health Checks
 
-## Prisma and the database
+- **API Health**: `GET /api/health`
+- **Database Health**: `GET /api/db-health`
 
-Redwood wouldn't be a full-stack framework without a database. It all starts with the schema. Open the [`schema.prisma`](api/db/schema.prisma) file in `api/db` and replace the `UserExample` model with the following `Post` model:
+## 📊 Monitoring
 
-```prisma
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  body      String
-  createdAt DateTime @default(now())
-}
-```
+The application includes built-in monitoring:
 
-Redwood uses [Prisma](https://www.prisma.io/), a next-gen Node.js and TypeScript ORM, to talk to the database. Prisma's schema offers a declarative way of defining your app's data models. And Prisma [Migrate](https://www.prisma.io/migrate) uses that schema to make database migrations hassle-free:
+- **Health Checks**: API and database connectivity monitoring
+- **Error Tracking**: Failed payment logging and retry tracking
+- **Performance**: Response time monitoring
+- **Business Metrics**: Sales, orders, and user activity tracking
 
-```
-yarn rw prisma migrate dev
+## 🔐 Security Features
 
-# ...
+- **Authentication**: Secure session-based authentication
+- **Authorization**: Role-based access control (RBAC)
+- **Payment Security**: PCI-compliant Stripe integration
+- **Data Protection**: Encrypted sensitive data
+- **CORS**: Properly configured cross-origin requests
+- **SQL Injection**: Prisma ORM protection
 
-? Enter a name for the new migration: › create posts
-```
+## 🎨 Customization
 
-> `rw` is short for `redwood`
+### Theme Colors
+The application uses a purple and green theme. Customize in:
+- `web/src/index.css` - Global styles
+- Tailwind classes throughout components
 
-You'll be prompted for the name of your migration. `create posts` will do.
+### Adding Features
+1. Create GraphQL schema in `api/src/graphql/`
+2. Implement service in `api/src/services/`
+3. Create React components in `web/src/components/`
+4. Add routes in `web/src/Routes.jsx`
 
-Now let's generate everything we need to perform all the CRUD (Create, Retrieve, Update, Delete) actions on our `Post` model:
+## 🤝 Contributing
 
-```
-yarn redwood generate scaffold post
-```
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
-Navigate to [http://localhost:8910/posts/new](http://localhost:8910/posts/new), fill in the title and body, and click "Save".
+## 📄 License
 
-Did we just create a post in the database? Yup! With `yarn rw generate scaffold <model>`, Redwood created all the pages, components, and services necessary to perform all CRUD actions on our posts table.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Frontend first with Storybook
+## 🆘 Support
 
-Don't know what your data models look like? That's more than ok—Redwood integrates Storybook so that you can work on design without worrying about data. Mockup, build, and verify your React components, even in complete isolation from the backend:
+- **Documentation**: Check [DEPLOYMENT.md](./DEPLOYMENT.md) for deployment help
+- **Issues**: Open an issue on GitHub
+- **Email**: support@route93.com
+- **Health Checks**: Monitor `/api/health` and `/api/db-health`
 
-```
-yarn rw storybook
-```
+## 🎉 Acknowledgments
 
-Seeing "Couldn't find any stories"? That's because you need a `*.stories.{tsx,jsx}` file. The Redwood CLI makes getting one easy enough—try generating a [Cell](https://redwoodjs.com/docs/cells), Redwood's data-fetching abstraction:
+Built with:
+- [RedwoodJS](https://redwoodjs.com/) - Full-stack framework
+- [Stripe](https://stripe.com/) - Payment processing
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [Prisma](https://prisma.io/) - Database ORM
+- [Vercel](https://vercel.com/) - Hosting platform
 
-```
-yarn rw generate cell examplePosts
-```
+---
 
-The Storybook server should hot reload and now you'll have four stories to work with. They'll probably look a little bland since there's no styling. See if the Redwood CLI's `setup ui` command has your favorite styling library:
-
-```
-yarn rw setup ui --help
-```
-
-## Testing with Jest
-
-It'd be hard to scale from side project to startup without a few tests. Redwood fully integrates Jest with both the front- and back-ends, and makes it easy to keep your whole app covered by generating test files with all your components and services:
-
-```
-yarn rw test
-```
-
-To make the integration even more seamless, Redwood augments Jest with database [scenarios](https://redwoodjs.com/docs/testing#scenarios) and [GraphQL mocking](https://redwoodjs.com/docs/testing#mocking-graphql-calls).
-
-## Ship it
-
-Redwood is designed for both serverless deploy targets like Netlify and Vercel and serverful deploy targets like Render and AWS:
-
-```
-yarn rw setup deploy --help
-```
-
-Don't go live without auth! Lock down your app with Redwood's built-in, database-backed authentication system ([dbAuth](https://redwoodjs.com/docs/authentication#self-hosted-auth-installation-and-setup)), or integrate with nearly a dozen third-party auth providers:
-
-```
-yarn rw setup auth --help
-```
-
-## Next Steps
-
-The best way to learn Redwood is by going through the comprehensive [tutorial](https://redwoodjs.com/docs/tutorial/foreword) and joining the community (via the [Discourse forum](https://community.redwoodjs.com) or the [Discord server](https://discord.gg/redwoodjs)).
-
-## Quick Links
-
-- Stay updated: read [Forum announcements](https://community.redwoodjs.com/c/announcements/5), follow us on [Twitter](https://twitter.com/redwoodjs), and subscribe to the [newsletter](https://redwoodjs.com/newsletter)
-- [Learn how to contribute](https://redwoodjs.com/docs/contributing)
+**Happy selling with Route93! 🛒✨**

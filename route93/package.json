@@ -19,6 +19,16 @@
   "engines": {
     "node": "=20.x"
   },
+  "scripts": {
+    "dev": "yarn rw dev",
+    "build": "yarn rw build",
+    "deploy": "yarn rw deploy vercel",
+    "migrate:deploy": "yarn rw prisma migrate deploy",
+    "db:seed": "yarn rw prisma db seed",
+    "postdeploy": "yarn migrate:deploy && yarn db:seed",
+    "prepare-deploy": "node scripts/prepare-deploy.js",
+    "health-check": "curl -f http://localhost:8910/api/health || exit 1"
+  },
   "prisma": {
     "seed": "yarn rw exec seed"
   },
