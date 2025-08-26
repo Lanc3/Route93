@@ -104,13 +104,30 @@ Ensure `package.json` contains:
 ## 🐛 Other Common Issues
 
 ### Node.js Version Mismatch
-**Error**: `The engine "node" is incompatible with this module`
+**Error**: `The engine "node" is incompatible with this module. Expected version "=20.x". Got "22.18.0"`
 
-**Solution**: Ensure your `package.json` specifies the correct Node.js version:
+**Solution**: 
+1. **Update `package.json`** to be more flexible:
 ```json
 {
   "engines": {
-    "node": "=20.x"
+    "node": ">=18.0.0"
+  }
+}
+```
+
+2. **Add `.nvmrc` file** to specify Node.js 20:
+```
+20
+```
+
+3. **Ensure Vercel uses Node.js 20** in your `vercel.json`:
+```json
+{
+  "functions": {
+    "api/dist/functions/*.js": {
+      "runtime": "nodejs20.x"
+    }
   }
 }
 ```

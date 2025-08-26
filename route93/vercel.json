@@ -2,6 +2,12 @@
   "buildCommand": "yarn vercel-build",
   "outputDirectory": "web/dist",
   "installCommand": "yarn install",
+  "framework": null,
+  "functions": {
+    "api/dist/functions/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
