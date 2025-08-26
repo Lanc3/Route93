@@ -46,7 +46,7 @@ This guide will walk you through deploying your Route93 e-commerce application t
    - Framework Preset: **Other** (Important: Do not use RedwoodJS preset)
    - Build Command: `yarn vercel-build`
    - Output Directory: `web/dist`
-   - Install Command: `yarn install --frozen-lockfile`
+   - Install Command: `yarn install`
    - Root Directory: Leave blank (should be root of repository)
    
    ⚠️ **Having build issues?** See [VERCEL-TROUBLESHOOTING.md](./VERCEL-TROUBLESHOOTING.md)
