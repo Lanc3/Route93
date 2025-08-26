@@ -73,7 +73,6 @@ REDWOOD_API_URL=https://your-vercel-domain.vercel.app/api
 ```bash
 # These are usually auto-configured, but can be set if needed
 REDWOOD_WEB_URL=https://your-vercel-domain.vercel.app
-REDWOOD_WEB_URL=https://your-domain.vercel.app
 ```
 
 ### Step 4: Database Migration
