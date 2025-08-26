@@ -43,16 +43,24 @@ This guide will walk you through deploying your Route93 e-commerce application t
    - Import your GitHub repository
 
 2. **Configure Build Settings**:
-   - Framework Preset: **Other**
-   - Build Command: `yarn rw deploy vercel`
+   - Framework Preset: **Other** (Important: Do not use RedwoodJS preset)
+   - Build Command: `yarn vercel-build`
    - Output Directory: `web/dist`
    - Install Command: `yarn install --frozen-lockfile`
+   - Root Directory: Leave blank (should be root of repository)
+   
+   ⚠️ **Having build issues?** See [VERCEL-TROUBLESHOOTING.md](./VERCEL-TROUBLESHOOTING.md)
 
 3. **Set Environment Variables** in Vercel Dashboard:
 
 #### Required Variables:
 ```bash
-DATABASE_URL=postgresql://username:password@host:port/database
+# Database (PostgreSQL) - Direct connection (tested and working)
+DATABASE_URL=postgres://6ef9ddbb64fca93cfea9f4a1acc1156982b63f3ebbcf77ce6772d7c87fc5d56e:sk_-3Ulf_CXsW5yje3pFPfMs@db.prisma.io:5432/postgres?sslmode=require
+
+# Optional: Prisma Accelerate (requires additional setup - see documentation)
+# DATABASE_URL=prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqd3RfaWQiOjEsInNlY3VyZV9rZXkiOiJza18tM1VsZl9DWHNXNXlqZTNwRlBmTXMiLCJhcGlfa2V5IjoiMDFLM0tZMTc0Mzk4SFpTSjQwU0tNTlBCQjciLCJ0ZW5hbnRfaWQiOiI2ZWY5ZGRiYjY0ZmNhOTNjZmVhOWY0YTFhY2MxMTU2OTgyYjYzZjNlYmJjZjc3Y2U2NzcyZDdjODdmYzVkNTZlIiwiaW50ZXJuYWxfc2VjcmV0IjoiZGU2OTkwOWYtM2EzYi00MmVlLWE0ZmUtOWNiNzU3Y2I0ZjYxIn0.ApP6M4BXa82R2becGkWoS0O3ohTkaf1Fpzu_yJ4FQjA
+
 SESSION_SECRET=your-super-secret-session-key-make-it-long-and-random
 STRIPE_SECRET_KEY=sk_live_your_live_stripe_secret_key
 REDWOOD_ENV_STRIPE_PUBLISHABLE_KEY=pk_live_your_live_stripe_publishable_key
@@ -109,24 +117,30 @@ The following optimizations are already configured:
 
 ### Common Issues
 
-1. **Build Fails**:
+1. **Build Fails with "Couldn't find package.json"**:
+   - Ensure Framework Preset is set to "Other" (not RedwoodJS)
+   - Verify Root Directory is blank in Vercel settings
+   - Check that vercel.json is in the repository root
+   - Try clearing Vercel build cache and redeploying
+
+2. **General Build Fails**:
    ```bash
-   # Clear cache and reinstall
+   # Clear cache and reinstall locally
    rm -rf node_modules yarn.lock
    yarn install
    yarn rw build
    ```
 
-2. **Database Connection Issues**:
+3. **Database Connection Issues**:
    - Verify DATABASE_URL format
    - Check database server allows external connections
    - Ensure SSL is configured if required
 
-3. **Stripe Issues**:
+4. **Stripe Issues**:
    - Verify you're using live keys (not test keys)
    - Check webhook endpoints if using Stripe webhooks
 
-4. **Environment Variables Not Working**:
+5. **Environment Variables Not Working**:
    - Ensure variables are set in Vercel dashboard
    - Redeploy after adding new environment variables
    - Check variable names match exactly (case-sensitive)

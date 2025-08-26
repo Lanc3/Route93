@@ -1,24 +1,21 @@
 {
+  "buildCommand": "yarn vercel-build",
+  "outputDirectory": "web/dist",
+  "installCommand": "yarn install --frozen-lockfile",
+  "framework": null,
   "functions": {
     "api/dist/functions/*.js": {
       "runtime": "@vercel/node@18.x"
     }
   },
-  "redirects": [
+  "rewrites": [
     {
       "source": "/api/(.*)",
       "destination": "/api/$1"
-    }
-  ],
-  "rewrites": [
+    },
     {
       "source": "/((?!api/.*).*)",
       "destination": "/index.html"
     }
-  ],
-  "buildCommand": "yarn rw deploy vercel",
-  "outputDirectory": "web/dist",
-  "installCommand": "yarn install --frozen-lockfile",
-  "framework": null,
-  "regions": ["iad1"]
+  ]
 }

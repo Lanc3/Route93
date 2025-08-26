@@ -84,9 +84,9 @@ const AdminInventoryPage = () => {
               >
                 <option value="">All Stock Levels</option>
                 <option value="OUT_OF_STOCK">Out of Stock</option>
-                <option value="CRITICAL">Critical (≤5)</option>
-                <option value="LOW_STOCK">Low Stock (≤10)</option>
-                <option value="IN_STOCK">In Stock (>10)</option>
+                                  <option value="CRITICAL">Critical (≤5)</option>
+                  <option value="LOW_STOCK">Low Stock (≤10)</option>
+                  <option value="IN_STOCK">In Stock (&gt;10)</option>
               </select>
 
               {/* Sort Options */}

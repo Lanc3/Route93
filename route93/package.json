@@ -23,6 +23,7 @@
     "dev": "yarn rw dev",
     "build": "yarn rw build",
     "deploy": "yarn rw deploy vercel",
+    "vercel-build": "yarn rw build",
     "migrate:deploy": "yarn rw prisma migrate deploy",
     "db:seed": "yarn rw prisma db seed",
     "postdeploy": "yarn migrate:deploy && yarn db:seed",
