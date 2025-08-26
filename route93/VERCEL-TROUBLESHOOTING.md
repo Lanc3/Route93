@@ -121,14 +121,38 @@ Ensure `package.json` contains:
 20
 ```
 
-3. **Ensure Vercel uses Node.js 20** in your `vercel.json`:
+3. **Let Vercel auto-detect runtime** by removing functions section from `vercel.json`:
+```json
+{
+  "buildCommand": "yarn vercel-build",
+  "outputDirectory": "web/dist",
+  "installCommand": "yarn install",
+  "framework": null,
+  "rewrites": [...]
+}
+```
+
+**Alternative**: If you need explicit runtime control, use:
 ```json
 {
   "functions": {
     "api/dist/functions/*.js": {
-      "runtime": "nodejs20.x"
+      "runtime": "@vercel/node@20.x"
     }
   }
+}
+```
+
+### Function Runtime Error
+**Error**: `Function Runtimes must have a valid version, for example 'now-php@1.0.0'`
+
+**Solution**: Remove the `functions` section from `vercel.json` to let Vercel auto-detect:
+```json
+{
+  "buildCommand": "yarn vercel-build",
+  "outputDirectory": "web/dist", 
+  "installCommand": "yarn install",
+  "framework": null
 }
 ```
 

@@ -64,11 +64,15 @@ DATABASE_URL=postgres://6ef9ddbb64fca93cfea9f4a1acc1156982b63f3ebbcf77ce6772d7c8
 SESSION_SECRET=your-super-secret-session-key-make-it-long-and-random
 STRIPE_SECRET_KEY=sk_live_your_live_stripe_secret_key
 REDWOOD_ENV_STRIPE_PUBLISHABLE_KEY=pk_live_your_live_stripe_publishable_key
+
+# IMPORTANT: Add this for production API routing
+REDWOOD_API_URL=https://your-vercel-domain.vercel.app/api
 ```
 
 #### Optional Variables:
 ```bash
-REDWOOD_API_URL=https://your-domain.vercel.app/api
+# These are usually auto-configured, but can be set if needed
+REDWOOD_WEB_URL=https://your-vercel-domain.vercel.app
 REDWOOD_WEB_URL=https://your-domain.vercel.app
 ```
 

@@ -1,16 +1,6 @@
 {
-  "buildCommand": "yarn vercel-build",
+  "buildCommand": "yarn rw deploy vercel",
   "outputDirectory": "web/dist",
   "installCommand": "yarn install",
-  "framework": null,
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
-    {
-      "source": "/((?!api/.*).*)",
-      "destination": "/index.html"
-    }
-  ]
+  "framework": null
 }
