@@ -1,4 +1,8 @@
 {
-  "buildCommand": "yarn rw build",
-  "outputDirectory": "web/dist"
+  "buildCommand": "yarn rw build && yarn rw prisma migrate deploy",
+  "outputDirectory": "web/dist",
+  "installCommand": "yarn install",
+  "framework": null ,
+    "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+
 }
