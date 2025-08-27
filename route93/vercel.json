@@ -6,7 +6,7 @@
   "builds": [
     {
       "src": "api/package.json",
-      "use": "@redwoodjs/vercel-builder"
+      "use": "@vercel/redwood"
     }
   ]
 }
