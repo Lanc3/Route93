@@ -9,7 +9,6 @@ coverage
 
 # Production builds (handled by Vercel)
 web/dist
-api/dist
 
 # Environment variables (use Vercel dashboard)
 .env
