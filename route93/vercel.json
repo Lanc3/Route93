@@ -2,10 +2,5 @@
   "buildCommand": "yarn rw build && yarn rw prisma migrate deploy",
   "outputDirectory": "web/dist",
   "installCommand": "yarn install",
-  "framework": null,
-  "functions": {
-    "api/dist/functions/**/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  }
+  "framework": null
 }
