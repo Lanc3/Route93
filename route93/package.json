@@ -34,7 +34,7 @@
   "prisma": {
     "seed": "yarn rw exec seed"
   },
-  "packageManager": "yarn@4.6.0",
+  "packageManager": "yarn@1.22.22",
   "dependencies": {
     "@stripe/react-stripe-js": "^3.9.2",
     "@stripe/stripe-js": "^7.9.0",
