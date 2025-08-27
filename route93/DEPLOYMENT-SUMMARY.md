@@ -52,7 +52,8 @@ Set these in your Vercel dashboard:
 
 ```bash
 # Your Prisma Database (Direct connection - tested and working)
-DATABASE_URL="postgres://6ef9ddbb64fca93cfea9f4a1acc1156982b63f3ebbcf77ce6772d7c87fc5d56e:sk_-3Ulf_CXsW5yje3pFPfMs@db.prisma.io:5432/postgres?sslmode=require"
+DATABASE_URL="postgresql://neondb_owner:npg_yRbKvsX9QA1L@ep-patient-boat-ad7j0k3o-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+"
 
 SESSION_SECRET="your-super-secret-session-key-32-chars-min"
 STRIPE_SECRET_KEY="sk_live_your_live_stripe_secret_key"

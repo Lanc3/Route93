@@ -56,7 +56,8 @@ This guide will walk you through deploying your Route93 e-commerce application t
 #### Required Variables:
 ```bash
 # Database (PostgreSQL) - Direct connection (tested and working)
-DATABASE_URL=postgres://6ef9ddbb64fca93cfea9f4a1acc1156982b63f3ebbcf77ce6772d7c87fc5d56e:sk_-3Ulf_CXsW5yje3pFPfMs@db.prisma.io:5432/postgres?sslmode=require
+DATABASE_URL=postgresql://neondb_owner:npg_yRbKvsX9QA1L@ep-patient-boat-ad7j0k3o-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+
 
 # Optional: Prisma Accelerate (requires additional setup - see documentation)
 # DATABASE_URL=prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqd3RfaWQiOjEsInNlY3VyZV9rZXkiOiJza18tM1VsZl9DWHNXNXlqZTNwRlBmTXMiLCJhcGlfa2V5IjoiMDFLM0tZMTc0Mzk4SFpTSjQwU0tNTlBCQjciLCJ0ZW5hbnRfaWQiOiI2ZWY5ZGRiYjY0ZmNhOTNjZmVhOWY0YTFhY2MxMTU2OTgyYjYzZjNlYmJjZjc3Y2U2NzcyZDdjODdmYzVkNTZlIiwiaW50ZXJuYWxfc2VjcmV0IjoiZGU2OTkwOWYtM2EzYi00MmVlLWE0ZmUtOWNiNzU3Y2I0ZjYxIn0.ApP6M4BXa82R2becGkWoS0O3ohTkaf1Fpzu_yJ4FQjA
