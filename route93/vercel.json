@@ -5,7 +5,7 @@
   "framework": null,
   "functions": {
     "api/dist/functions/**/*.js": {
-      "runtime": "node@20"
+      "runtime": "nodejs"
     }
   }
 }
