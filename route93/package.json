@@ -40,6 +40,7 @@
     "@stripe/react-stripe-js": "^3.9.2",
     "@stripe/stripe-js": "^7.9.0",
     "crypto-js": "^4.2.0",
-    "stripe": "^18.4.0"
+    "stripe": "^18.4.0",
+    "vercel": "^46.0.4"
   }
 }
