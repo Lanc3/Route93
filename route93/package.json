@@ -17,7 +17,8 @@
     "root": true
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "yarn": ">=1.15"
   },
   "scripts": {
     "dev": "yarn rw dev",
