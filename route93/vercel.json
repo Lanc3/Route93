@@ -3,14 +3,10 @@
   "outputDirectory": "web/dist",
   "installCommand": "yarn install",
   "framework": null,
-  "rewrites": [
+  "builds": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "api/package.json",
+      "use": "@redwoodjs/vercel-builder"
     }
   ]
 }
