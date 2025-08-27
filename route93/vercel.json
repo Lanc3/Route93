@@ -3,10 +3,5 @@
   "outputDirectory": "web/dist",
   "installCommand": "yarn install",
   "framework": null,
-  "builds": [
-    {
-      "src": "api/package.json",
-      "use": "@vercel/redwood"
-    }
-  ]
+
 }
