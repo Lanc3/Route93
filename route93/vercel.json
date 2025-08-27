@@ -1,6 +1,21 @@
 {
-  "buildCommand": "yarn rw build && yarn rw prisma migrate deploy",
+  "buildCommand": "yarn rw build",
   "outputDirectory": "web/dist",
   "installCommand": "yarn install",
-  "framework": null
+  "framework": null,
+  "functions": {
+    "api/dist/functions/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
