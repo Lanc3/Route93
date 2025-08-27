@@ -1,6 +1,7 @@
 import Stripe from 'stripe'
 import { db } from 'src/lib/db'
 import { requireAuth } from 'src/lib/auth'
+import { sendOrderConfirmationEmailById } from 'src/services/emails/emails'
 
 // Initialize Stripe with your secret key
 // You'll need to set STRIPE_SECRET_KEY in your environment variables
@@ -36,7 +37,7 @@ export const payment = ({ id }) => {
   })
 }
 
-export const createPayment = ({ input }) => {
+export const createPayment = async ({ input }) => {
   requireAuth()
   
   // Validate that orderId is provided
@@ -44,12 +45,36 @@ export const createPayment = ({ input }) => {
     throw new Error('orderId is required for payment creation')
   }
   
-  return db.payment.create({
+  // Create the payment record
+  const payment = await db.payment.create({
     data: input,
     include: {
       order: true
     }
   })
+  
+  // If payment is completed, send order confirmation email
+  if (input.status === 'COMPLETED') {
+    try {
+      // Update order status to CONFIRMED
+      await db.order.update({
+        where: { id: input.orderId },
+        data: { status: 'CONFIRMED' }
+      })
+      
+      // Send order confirmation email
+      await sendOrderConfirmationEmailById({
+        orderId: input.orderId
+      })
+      
+      console.log(`Order confirmation email sent for order ${input.orderId}`)
+    } catch (emailError) {
+      console.error('Failed to send order confirmation email:', emailError)
+      // Don't throw error here - payment was successful, email failure shouldn't break the flow
+    }
+  }
+  
+  return payment
 }
 
 export const recordFailedPayment = ({ input }) => {
@@ -90,6 +115,44 @@ export const deletePayment = ({ id }) => {
   return db.payment.delete({
     where: { id }
   })
+}
+
+// Admin function to manually send order confirmation email
+export const resendOrderConfirmationEmail = async ({ orderId }) => {
+  requireAuth({ roles: ['ADMIN'] })
+  
+  try {
+    // Verify order exists and has a completed payment
+    const order = await db.order.findUnique({
+      where: { id: orderId },
+      include: {
+        payments: {
+          where: { status: 'COMPLETED' }
+        }
+      }
+    })
+    
+    if (!order) {
+      throw new Error('Order not found')
+    }
+    
+    if (order.payments.length === 0) {
+      throw new Error('Order has no completed payments')
+    }
+    
+    // Send the order confirmation email
+    await sendOrderConfirmationEmailById({
+      orderId: orderId
+    })
+    
+    console.log(`Order confirmation email resent for order ${orderId}`)
+    
+    return { success: true, message: 'Order confirmation email sent successfully' }
+    
+  } catch (error) {
+    console.error('Failed to resend order confirmation email:', error)
+    throw new Error(`Failed to resend order confirmation email: ${error.message}`)
+  }
 }
 
 // Relation resolvers
@@ -160,11 +223,13 @@ export const confirmPayment = async (paymentIntentId) => {
       const orderId = parseInt(paymentIntent.metadata.orderId)
       
       if (orderId) {
+        // Update order status to CONFIRMED
         await db.order.update({
           where: { id: orderId },
-          data: { status: 'PROCESSING' }
+          data: { status: 'CONFIRMED' }
         })
 
+        // Update payment status
         await db.payment.updateMany({
           where: { orderId },
           data: { 
@@ -172,6 +237,18 @@ export const confirmPayment = async (paymentIntentId) => {
             stripePaymentIntentId: paymentIntentId
           }
         })
+        
+        // Send order confirmation email
+        try {
+          await sendOrderConfirmationEmailById({
+            orderId: orderId
+          })
+          
+          console.log(`Order confirmation email sent for order ${orderId} via webhook`)
+        } catch (emailError) {
+          console.error('Failed to send order confirmation email via webhook:', emailError)
+          // Don't throw error here - payment was successful, email failure shouldn't break the flow
+        }
       }
     }
 

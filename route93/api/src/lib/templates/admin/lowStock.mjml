@@ -1,0 +1,64 @@
+<mjml>
+  <mj-head>
+    <mj-title>Low Stock Alert - Route93</mj-title>
+    <mj-font name="Inter" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <mj-attributes>
+      <mj-all font-family="Inter, Arial, sans-serif" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f8fafc">
+    <mj-section padding="20px">
+      <mj-column>
+        <mj-image src="https://route93.com/logo.png" alt="Route93" width="120px" padding="20px" />
+        
+        <mj-divider border-color="#e2e8f0" border-width="1px" padding="20px" />
+        
+        <mj-text font-size="24px" font-weight="600" color="#dc2626" align="center" padding="20px">
+          ⚠️ Low Stock Alert
+        </mj-text>
+        
+        <mj-text font-size="16px" color="#64748b" line-height="24px" padding="20px">
+          Hello Admin,
+        </mj-text>
+        
+        <mj-text font-size="16px" color="#64748b" line-height="24px" padding="20px">
+          The following products have fallen below the low stock threshold ({{threshold}} items):
+        </mj-text>
+        
+        <mj-section background-color="#fef2f2" border-radius="8px" padding="20px">
+          <mj-column>
+            {{#each products}}
+            <mj-text font-size="14px" color="#dc2626" font-weight="600" padding="10px 0">
+              {{name}} - Current Stock: {{inventory}}
+            </mj-text>
+            {{/each}}
+          </mj-column>
+        </mj-section>
+        
+        <mj-text font-size="14px" color="#64748b" line-height="24px" padding="20px">
+          Please review and update inventory levels to prevent stockouts.
+        </mj-text>
+        
+        <mj-button href="{{adminUrl}}" 
+                   background-color="#dc2626" 
+                   color="white" 
+                   font-size="16px" 
+                   font-weight="600" 
+                   padding="20px" 
+                   border-radius="8px">
+          Manage Inventory
+        </mj-button>
+        
+        <mj-divider border-color="#e2e8f0" border-width="1px" padding="20px" />
+        
+        <mj-text font-size="12px" color="#94a3b8" align="center" padding="20px">
+          This is an automated alert from the Route93 inventory system.
+        </mj-text>
+        
+        <mj-text font-size="12px" color="#94a3b8" align="center" padding="20px">
+          © 2024 Route93. All rights reserved.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

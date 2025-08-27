@@ -1,5 +1,6 @@
 import { db } from 'src/lib/db'
 import { requireAuth } from 'src/lib/auth'
+import { sendOrderConfirmationEmailById } from 'src/services/emails/emails'
 
 export const orders = async ({
   status,
@@ -210,15 +211,45 @@ export const updateOrder = ({ id, input }) => {
   })
 }
 
-export const updateOrderStatus = ({ id, status }) => {
+export const updateOrderStatus = async ({ id, status }) => {
   requireAuth({ roles: ['ADMIN'] })
-  return db.order.update({
+  
+  const order = await db.order.update({
     data: { 
       status,
       updatedAt: new Date(),
     },
     where: { id },
   })
+  
+  // If order is being confirmed and has a completed payment, send confirmation email
+  if (status === 'CONFIRMED') {
+    try {
+      // Check if order has a completed payment
+      const payment = await db.payment.findFirst({
+        where: { 
+          orderId: id,
+          status: 'COMPLETED'
+        }
+      })
+      
+      if (payment) {
+        // Send order confirmation email
+        await sendOrderConfirmationEmailById({
+          orderId: id
+        })
+        
+        console.log(`Order confirmation email sent for manually confirmed order ${id}`)
+      } else {
+        console.log(`Order ${id} confirmed but no completed payment found - skipping email`)
+      }
+    } catch (emailError) {
+      console.error('Failed to send order confirmation email for manually confirmed order:', emailError)
+      // Don't throw error here - order status was updated successfully, email failure shouldn't break the flow
+    }
+  }
+  
+  return order
 }
 
 export const deleteOrder = ({ id }) => {

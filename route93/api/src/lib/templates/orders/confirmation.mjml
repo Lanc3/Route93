@@ -1,0 +1,66 @@
+<mjml>
+  <mj-head>
+    <mj-title>Order Confirmed - Route93</mj-title>
+    <mj-font name="Inter" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <mj-attributes>
+      <mj-all font-family="Inter, Arial, sans-serif" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f8fafc">
+    <mj-section padding="20px">
+      <mj-column>
+        <mj-image src="https://route93.com/logo.png" alt="Route93" width="120px" padding="20px" />
+        
+        <mj-divider border-color="#e2e8f0" border-width="1px" padding="20px" />
+        
+        <mj-text font-size="24px" font-weight="600" color="#1e293b" align="center" padding="20px">
+          Order Confirmed!
+        </mj-text>
+        
+        <mj-text font-size="16px" color="#64748b" line-height="24px" padding="20px">
+          Hi {{user.name}},
+        </mj-text>
+        
+        <mj-text font-size="16px" color="#64748b" line-height="24px" padding="20px">
+          Thank you for your order! We've received your payment and are preparing your items for shipment.
+        </mj-text>
+        
+        <mj-text font-size="18px" font-weight="600" color="#1e293b" align="center" padding="20px">
+          Order #{{order.orderNumber}}
+        </mj-text>
+        
+        <mj-text font-size="16px" color="#64748b" line-height="24px" padding="20px">
+          Order Date: {{formatDate order.createdAt}}
+        </mj-text>
+        
+        <mj-text font-size="16px" color="#64748b" line-height="24px" padding="20px">
+          Total Amount: {{formatPrice order.totalAmount}}
+        </mj-text>
+        
+        <mj-button href="{{orderUrl}}" 
+                   background-color="#8b5cf6" 
+                   color="white" 
+                   font-size="16px" 
+                   font-weight="600" 
+                   padding="20px" 
+                   border-radius="8px">
+          View Order Details
+        </mj-button>
+        
+        <mj-divider border-color="#e2e8f0" border-width="1px" padding="20px" />
+        
+        <mj-text font-size="14px" color="#94a3b8" align="center" padding="20px">
+          We'll send you another email when your order ships with tracking information.
+        </mj-text>
+        
+        <mj-text font-size="12px" color="#94a3b8" align="center" padding="20px">
+          Questions about your order? Contact us at <a href="mailto:{{supportEmail}}" style="color: #8b5cf6;">{{supportEmail}}</a>
+        </mj-text>
+        
+        <mj-text font-size="12px" color="#94a3b8" align="center" padding="20px">
+          © 2024 Route93. All rights reserved.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

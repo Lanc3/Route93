@@ -22,12 +22,25 @@ export const handler = async (event, context) => {
     // so don't include anything you wouldn't want prying eyes to see. The
     // `user` here has been sanitized to only include the fields listed in
     // `allowedUserFields` so it should be safe to return as-is.
-    handler: (user, _resetToken) => {
-      // TODO: Send user an email/message with a link to reset their password,
-      // including the `resetToken`. The URL should look something like:
-      // `http://localhost:8910/reset-password?resetToken=${resetToken}`
-
-      return user
+    handler: async (user, resetToken) => {
+      try {
+        // Import the email service
+        const { sendPasswordResetEmail } = await import('../services/emails/emails.js')
+        
+        // Send password reset email
+        await sendPasswordResetEmail({
+          email: user.email,
+          resetToken,
+          userName: user.name
+        })
+        
+        console.log(`Password reset email sent to ${user.email}`)
+        return user
+      } catch (error) {
+        console.error('Password reset email failed:', error)
+        // Still return user so auth doesn't fail
+        return user
+      }
     },
 
     // How long the resetToken is valid for, in seconds (default is 24 hours)

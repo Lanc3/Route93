@@ -198,3 +198,19 @@ model Review {
   @@unique([userId, productId])
   @@map("reviews")
 }
+
+model Email {
+  id        Int      @id @default(autoincrement())
+  to        String
+  subject   String
+  template  String
+  context   String?  // JSON string of template context
+  status    String   @default("PENDING") // PENDING, SENT, FAILED
+  sentAt    DateTime?
+  error     String?
+  priority  String   @default("NORMAL") // HIGH, NORMAL, LOW
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("emails")
+}
