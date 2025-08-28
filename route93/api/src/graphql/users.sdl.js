@@ -21,7 +21,7 @@ export const schema = gql`
     orders: [Order]!
     addresses: [Address]!
     cartItems: [CartItem]!
-    reviews: [Review]!
+    reviews: [Review]
     _count: UserCount
   }
 
@@ -35,6 +35,7 @@ export const schema = gql`
       offset: Int
     ): [User!]! @requireAuth(roles: ["ADMIN"])
     user(id: Int!): User @requireAuth(roles: ["ADMIN"])
+    currentUser: User @requireAuth
     usersCount(
       role: String
       search: String
@@ -63,9 +64,15 @@ export const schema = gql`
     resetTokenExpiresAt: DateTime
   }
 
+  input UpdateCurrentUserInput {
+    name: String
+    phone: String
+  }
+
   type Mutation {
     createUser(input: CreateUserInput!): User! @requireAuth(roles: ["ADMIN"])
     updateUser(id: Int!, input: UpdateUserInput!): User! @requireAuth(roles: ["ADMIN"])
+    updateCurrentUser(input: UpdateCurrentUserInput!): User! @requireAuth
     updateUserRole(id: Int!, role: String!): User! @requireAuth(roles: ["ADMIN"])
     deleteUser(id: Int!): User! @requireAuth(roles: ["ADMIN"])
   }

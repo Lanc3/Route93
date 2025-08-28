@@ -18,7 +18,10 @@ export const adminStats = async () => {
       pendingOrdersCount,
       processingOrdersCount,
       shippedOrdersCount,
-      deliveredOrdersCount
+      deliveredOrdersCount,
+      clientsCount,
+      adminsCount,
+      activeTodayCount
     ] = await Promise.all([
       // Total products (all products for admin dashboard)
       db.product.count(),
@@ -99,6 +102,25 @@ export const adminStats = async () => {
       // Delivered orders count
       db.order.count({
         where: { status: 'DELIVERED' }
+      }),
+      
+      // Clients count (users with CLIENT role)
+      db.user.count({
+        where: { role: 'CLIENT' }
+      }),
+      
+      // Admins count (users with ADMIN role)
+      db.user.count({
+        where: { role: 'ADMIN' }
+      }),
+      
+      // Active today count (users who were active today)
+      db.user.count({
+        where: {
+          updatedAt: {
+            gte: new Date(new Date().setHours(0, 0, 0, 0)) // Start of today
+          }
+        }
       })
     ])
 
@@ -115,7 +137,10 @@ export const adminStats = async () => {
       pendingOrdersCount,
       processingOrdersCount,
       shippedOrdersCount,
-      deliveredOrdersCount
+      deliveredOrdersCount,
+      clientsCount,
+      adminsCount,
+      activeTodayCount
     }
     
     return result
@@ -136,7 +161,10 @@ export const adminStats = async () => {
       pendingOrdersCount: 0,
       processingOrdersCount: 0,
       shippedOrdersCount: 0,
-      deliveredOrdersCount: 0
+      deliveredOrdersCount: 0,
+      clientsCount: 0,
+      adminsCount: 0,
+      activeTodayCount: 0
     }
   }
 }

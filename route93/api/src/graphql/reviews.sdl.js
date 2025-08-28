@@ -14,8 +14,8 @@ export const schema = gql`
   }
 
   type Query {
-    reviews: [Review!]! @requireAuth
-    review(id: Int!): Review @requireAuth
+    reviews: [Review!]! @skipAuth
+    review(id: Int!): Review @skipAuth
   }
 
   input CreateReviewInput {

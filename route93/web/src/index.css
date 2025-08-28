@@ -23,3 +23,33 @@
   overflow: hidden;
 }
 
+/* Logo Animation */
+@keyframes bop {
+  0%, 100% { 
+    transform: scale(1); 
+  }
+  50% { 
+    transform: scale(1.1); 
+  }
+}
+
+.animate-bop {
+  animation: bop 2s ease-in-out infinite;
+}
+
+/* Logo container styles */
+.logo-container {
+  @apply flex items-center;
+}
+
+.logo-image {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+/* Optional: Pause animation on user preference */
+@media (prefers-reduced-motion: reduce) {
+  .animate-bop {
+    animation: none;
+  }
+}
+

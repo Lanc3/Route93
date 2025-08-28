@@ -1,3 +1,5 @@
+import { gql } from 'graphql-tag'
+
 export const schema = gql`
   type SalesReport {
     totalRevenue: Float!
@@ -74,6 +76,7 @@ export const schema = gql`
     topCustomers: [CustomerStats!]!
     usersByRegistrationDate: [UserRegistration!]!
     userActivity: [UserActivity!]!
+    returnCustomerRate: Float!
   }
 
   type CustomerStats {
@@ -107,6 +110,12 @@ export const schema = gql`
     returnCustomerRate: Float!
   }
 
+  type DashboardData {
+    salesData: SalesReport!
+    productData: ProductAnalytics!
+    userData: UserAnalytics!
+  }
+
   type Query {
     salesReport(
       startDate: DateTime
@@ -129,5 +138,11 @@ export const schema = gql`
       startDate: DateTime
       endDate: DateTime
     ): OverallAnalytics! @requireAuth(roles: ["ADMIN"])
+
+    dashboardData(
+      startDate: DateTime
+      endDate: DateTime
+      period: String
+    ): DashboardData! @requireAuth(roles: ["ADMIN"])
   }
 `

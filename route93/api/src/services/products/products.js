@@ -66,6 +66,24 @@ export const products = async ({
     skip: offset,
     include: {
       category: true,
+      reviews: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+      _count: {
+        select: {
+          reviews: true,
+        },
+      },
     },
   })
 }
@@ -115,6 +133,24 @@ export const product = ({ id }) => {
     where: { id },
     include: {
       category: true,
+      reviews: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+      _count: {
+        select: {
+          reviews: true,
+        },
+      },
     },
   })
 }
@@ -124,6 +160,24 @@ export const productBySlug = ({ slug }) => {
     where: { slug },
     include: {
       category: true,
+      reviews: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+      _count: {
+        select: {
+          reviews: true,
+        },
+      },
     },
   })
 }

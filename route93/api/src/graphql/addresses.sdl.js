@@ -23,6 +23,7 @@ export const schema = gql`
   type Query {
     addresses: [Address!]! @requireAuth
     address(id: Int!): Address @requireAuth
+    addressesByUser(userId: Int!): [Address!]! @requireAuth
   }
 
   input CreateAddressInput {
@@ -53,6 +54,10 @@ export const schema = gql`
     phone: String
     isDefault: Boolean
     userId: Int
+  }
+
+  input DeleteAddressInput {
+    id: Int!
   }
 
   type Mutation {

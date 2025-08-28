@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, routes } from '@redwoodjs/router'
 import { useCart } from 'src/contexts/CartContext'
 import { toast } from '@redwoodjs/web/toast'
+import ProductReviews from 'src/components/ProductReviews/ProductReviews'
 
 export const QUERY = gql`
   query FindProductQuery($id: Int!) {
@@ -23,6 +24,20 @@ export const QUERY = gql`
         id
         name
         slug
+      }
+      reviews {
+        id
+        rating
+        title
+        comment
+        createdAt
+        user {
+          id
+          name
+        }
+      }
+      _count {
+        reviews
       }
     }
   }
@@ -388,7 +403,7 @@ export const Success = ({ product }) => {
               {[
                 { id: 'description', name: 'Description' },
                 { id: 'specifications', name: 'Specifications' },
-                { id: 'reviews', name: 'Reviews (0)' },
+                { id: 'reviews', name: `Reviews (${product._count?.reviews || 0})` },
                 { id: 'shipping', name: 'Shipping & Returns' },
               ].map((tab) => (
                 <button
@@ -461,14 +476,13 @@ export const Success = ({ product }) => {
 
             {activeTab === 'reviews' && (
               <div className="bg-white rounded-lg p-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Customer Reviews</h3>
-                <div className="text-center py-12">
-                  <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  <p className="text-gray-500">No reviews yet. Be the first to review this product!</p>
-                  <button className="btn-outline mt-4">Write a Review</button>
-                </div>
+                <ProductReviews 
+                  product={product} 
+                  onReviewCreated={() => {
+                    // This will trigger a refetch of the product data
+                    window.location.reload()
+                  }}
+                />
               </div>
             )}
 

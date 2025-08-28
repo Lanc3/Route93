@@ -42,6 +42,12 @@ export const QUERY = gql`
         name
         slug
       }
+      reviews {
+        rating
+      }
+      _count {
+        reviews
+      }
     }
     productsCount(
       categoryId: $categoryId
@@ -95,6 +101,21 @@ export const Failure = ({ error }) => (
 )
 
 export const Success = ({ products, productsCount }) => {
+  // Calculate average rating for each product
+  const productsWithRating = products.map((product) => {
+    // Ensure reviews is always an array, even if null from database
+    const reviews = product.reviews || []
+    const averageRating = reviews.length > 0
+      ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+      : 0
+    
+    return {
+      ...product,
+      averageRating,
+      reviewCount: product._count?.reviews || 0
+    }
+  })
+
   return (
     <div>
       {/* Results Summary */}
@@ -106,7 +127,7 @@ export const Success = ({ products, productsCount }) => {
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {products.map((product) => (
+        {productsWithRating.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
       </div>

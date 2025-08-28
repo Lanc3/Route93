@@ -1,5 +1,6 @@
 import { db } from 'src/lib/db'
 import { requireAuth } from 'src/lib/auth'
+import { context } from '@redwoodjs/graphql-server'
 
 export const users = async ({
   role,
@@ -109,6 +110,52 @@ export const user = ({ id }) => {
   })
 }
 
+export const currentUser = () => {
+  requireAuth()
+  
+  const { currentUser } = context
+  
+  if (!currentUser || !currentUser.id) {
+    throw new Error('Authentication context not available. Please log in again.')
+  }
+  
+  return db.user.findUnique({
+    where: { id: currentUser.id },
+    include: {
+      _count: {
+        select: {
+          orders: true,
+          addresses: true,
+          cartItems: true,
+          reviews: true,
+        },
+      },
+      orders: {
+        orderBy: { createdAt: 'desc' },
+        include: {
+          orderItems: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  images: true,
+                  price: true,
+                },
+              },
+            },
+          },
+          billingAddress: true,
+          shippingAddress: true,
+        },
+      },
+      addresses: {
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  })
+}
+
 export const createUser = ({ input }) => {
   requireAuth({ roles: ['ADMIN'] })
   return db.user.create({
@@ -121,6 +168,21 @@ export const updateUser = ({ id, input }) => {
   return db.user.update({
     data: input,
     where: { id },
+  })
+}
+
+export const updateCurrentUser = ({ input }) => {
+  requireAuth()
+  
+  const { currentUser } = context
+  
+  if (!currentUser || !currentUser.id) {
+    throw new Error('Authentication context not available. Please log in again.')
+  }
+  
+  return db.user.update({
+    data: input,
+    where: { id: currentUser.id },
   })
 }
 
@@ -146,17 +208,4 @@ export const deleteUser = ({ id }) => {
   })
 }
 
-export const User = {
-  orders: (_obj, { root }) => {
-    return db.user.findUnique({ where: { id: root?.id } }).orders()
-  },
-  addresses: (_obj, { root }) => {
-    return db.user.findUnique({ where: { id: root?.id } }).addresses()
-  },
-  cartItems: (_obj, { root }) => {
-    return db.user.findUnique({ where: { id: root?.id } }).cartItems()
-  },
-  reviews: (_obj, { root }) => {
-    return db.user.findUnique({ where: { id: root?.id } }).reviews()
-  },
-}
+// No custom resolvers needed when using include in the main query

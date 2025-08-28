@@ -1,12 +1,32 @@
 import { db } from 'src/lib/db'
 
 export const reviews = () => {
-  return db.review.findMany()
+  return db.review.findMany({
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  })
 }
 
 export const review = ({ id }) => {
   return db.review.findUnique({
     where: { id },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
   })
 }
 

@@ -1,6 +1,7 @@
 import { Link, routes } from '@redwoodjs/router'
 import { useMutation } from '@redwoodjs/web'
 import { toast } from '@redwoodjs/web/toast'
+import { gql } from '@apollo/client'
 
 const UPDATE_USER_ROLE = gql`
   mutation UpdateUserRole($id: Int!, $role: String!) {

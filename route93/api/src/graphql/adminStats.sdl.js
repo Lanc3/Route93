@@ -13,6 +13,9 @@ export const schema = gql`
     processingOrdersCount: Int!
     shippedOrdersCount: Int!
     deliveredOrdersCount: Int!
+    clientsCount: Int!
+    adminsCount: Int!
+    activeTodayCount: Int!
   }
 
   type Query {

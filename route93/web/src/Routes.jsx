@@ -15,12 +15,18 @@ import { useAuth } from './auth'
 const Routes = () => {
   return (
     <Router useAuth={useAuth}>
-      <Route path="/payment-failed" page={PaymentFailedPage} name="paymentFailed" />
-      <Route path="/order-confirmation/{id:Int}" page={OrderConfirmationPage} name="orderConfirmation" />
-      <Route path="/forgot-password" page={ForgotPasswordPage} name="forgotPassword" />
-      <Route path="/reset-password" page={ResetPasswordPage} name="resetPassword" />
+      
       <Set wrap={MainLayout}>
+          <Route path="/payment-failed" page={PaymentFailedPage} name="paymentFailed" />
+          <Route path="/forgot-password" page={ForgotPasswordPage} name="forgotPassword" />
+          <Route path="/reset-password" page={ResetPasswordPage} name="resetPassword" />
+        <PrivateSet unauthenticated="home" roles={["CLIENT", "ADMIN"]}>
+          <Route path="/order-details/{id:Int}" page={OrderDetailsPage} name="orderDetails" />
+          <Route path="/user-account" page={UserAccountPage} name="userAccount" />
+          <Route path="/order-confirmation/{id:Int}" page={OrderConfirmationPage} name="orderConfirmation" />
+        </PrivateSet>
         <PrivateSet unauthenticated="home" roles="ADMIN">
+          <Route path="/admin/dashboard" page={AdminDashboardPage} name="adminDashboard" />
           <Route path="/admin/analytics" page={AdminAnalyticsPage} name="adminAnalytics" />
           <Route path="/admin/inventory" page={AdminInventoryPage} name="adminInventory" />
           <Route path="/admin/users/{id:Int}" page={AdminUserDetailsPage} name="adminUserDetails" />

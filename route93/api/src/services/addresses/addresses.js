@@ -4,6 +4,13 @@ export const addresses = () => {
   return db.address.findMany()
 }
 
+export const addressesByUser = ({ userId }) => {
+  return db.address.findMany({
+    where: { userId },
+    orderBy: { isDefault: 'desc', createdAt: 'desc' }
+  })
+}
+
 export const address = ({ id }) => {
   return db.address.findUnique({
     where: { id },

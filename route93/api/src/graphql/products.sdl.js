@@ -1,3 +1,5 @@
+import { gql } from 'graphql-tag'
+
 export const schema = gql`
   type InventoryStats {
     totalProducts: Int!
@@ -26,6 +28,12 @@ export const schema = gql`
     updatedAt: DateTime!
     category: Category
     categoryId: Int
+    reviews: [Review!]
+    _count: ProductCount
+  }
+
+  type ProductCount {
+    reviews: Int!
   }
 
   type Query {

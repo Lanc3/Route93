@@ -1,28 +1,136 @@
 import { Link, routes } from '@redwoodjs/router'
 import { useAuth } from 'src/auth'
 import { useCart } from 'src/contexts/CartContext'
+import { useState, useEffect, useRef } from 'react'
 import SearchBar from 'src/components/SearchBar/SearchBar'
+import AnimatedLogo from 'src/components/AnimatedLogo/AnimatedLogo'
 
 const MainLayout = ({ children }) => {
   const { isAuthenticated, currentUser, logOut } = useAuth()
   const { getCartCount } = useCart()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const mobileMenuRef = useRef(null)
+  const mobileMenuButtonRef = useRef(null)
 
   const handleLogout = async () => {
     await logOut()
   }
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen)
+  }
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false)
+  }
+
+  // Click outside handler to close mobile menu
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        isMobileMenuOpen &&
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target) &&
+        mobileMenuButtonRef.current &&
+        !mobileMenuButtonRef.current.contains(event.target)
+      ) {
+        closeMobileMenu()
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isMobileMenuOpen])
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    closeMobileMenu()
+  }, [])
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-lg border-b border-gray-200">
+      <header className="bg-white shadow-lg border-b border-gray-200 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          {/* Top row: Logo + Search + Account */}
+          <div className="flex items-center justify-between py-3">
             {/* Logo */}
-            <div className="flex-shrink-0">
-              <Link to={routes.home()} className="flex items-center">
-                <div className="text-2xl font-bold text-purple-600">Route93</div>
-              </Link>
+            <AnimatedLogo size="large" />
+            
+            {/* Desktop Search - centered and prominent */}
+            <div className="hidden lg:flex flex-1 max-w-md mx-8">
+              <SearchBar />
             </div>
             
+            {/* Account Controls */}
+            <div className="flex items-center space-x-4">
+              {/* Account */}
+              <div className="flex items-center space-x-2">
+                {isAuthenticated ? (
+                  <>
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                          <span className="text-purple-600 font-medium text-sm">
+                            {currentUser?.name?.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="hidden md:block">
+                          <p className="text-sm font-medium text-gray-700">
+                            {currentUser?.name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {currentUser?.role}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <Link 
+                        to={routes.userAccount()} 
+                        className="text-gray-600 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors flex items-center space-x-1"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span className="hidden sm:inline">Settings</span>
+                      </Link>
+
+                      {currentUser?.role === 'ADMIN' && (
+                        <Link 
+                          to={routes.admin()} 
+                          className="text-gray-600 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors"
+                        >
+                          Admin
+                        </Link>
+                      )}
+                      
+                      <button 
+                        onClick={handleLogout}
+                        className="text-gray-600 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Link to={routes.login()} className="text-gray-600 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors">
+                      Sign In
+                    </Link>
+                    <Link to={routes.signup()} className="btn-primary text-sm">
+                      Sign Up
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Bottom row: Navigation + Cart + Mobile Search */}
+          <div className="flex items-center justify-between py-3 border-t border-gray-100">
             {/* Navigation */}
             <nav className="hidden md:flex space-x-8">
               <Link 
@@ -56,19 +164,14 @@ const MainLayout = ({ children }) => {
                 Contact
               </Link>
             </nav>
-
-            {/* Right side - Cart, Search, Account */}
+            
+            {/* Right side - Cart + Mobile Search + Mobile Menu */}
             <div className="flex items-center space-x-4">
-              {/* Desktop Search */}
-              <div className="hidden lg:block">
-                <SearchBar />
-              </div>
-
-              {/* Mobile Search */}
-              <div className="lg:hidden">
+              {/* Mobile Search - only show on mobile/tablet */}
+              <div className="md:hidden">
                 <SearchBar isMobile={true} />
               </div>
-
+              
               {/* Cart */}
               <Link to={routes.cart()} className="relative p-2 text-gray-600 hover:text-purple-600 transition-colors">
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,67 +184,157 @@ const MainLayout = ({ children }) => {
                 )}
               </Link>
 
-              {/* Account */}
-              <div className="flex items-center space-x-2">
+              {/* Mobile menu button */}
+              <div className="md:hidden">
+                <button 
+                  ref={mobileMenuButtonRef}
+                  onClick={toggleMobileMenu}
+                  className="text-gray-600 hover:text-purple-600 p-2 transition-colors"
+                  aria-label="Toggle mobile menu"
+                >
+                  {isMobileMenuOpen ? (
+                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  ) : (
+                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Menu Overlay */}
+        {isMobileMenuOpen && (
+          <div 
+            ref={mobileMenuRef}
+            className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-50"
+          >
+            <div className="px-4 py-6 space-y-6">
+              {/* Mobile Navigation */}
+              <nav className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Navigation</h3>
+                <div className="space-y-2">
+                  <Link 
+                    to={routes.home()} 
+                    onClick={closeMobileMenu}
+                    className="block text-gray-600 hover:text-purple-600 py-2 text-base font-medium transition-colors"
+                  >
+                    Home
+                  </Link>
+                  <Link 
+                    to={routes.products()} 
+                    onClick={closeMobileMenu}
+                    className="block text-gray-600 hover:text-purple-600 py-2 text-base font-medium transition-colors"
+                  >
+                    Products
+                  </Link>
+                  <Link 
+                    to={routes.collections()} 
+                    onClick={closeMobileMenu}
+                    className="block text-gray-600 hover:text-purple-600 py-2 text-base font-medium transition-colors"
+                  >
+                    Collections
+                  </Link>
+                  <Link 
+                    to={routes.about()} 
+                    onClick={closeMobileMenu}
+                    className="block text-gray-600 hover:text-purple-600 py-2 text-base font-medium transition-colors"
+                  >
+                    About
+                  </Link>
+                  <Link 
+                    to={routes.contact()} 
+                    onClick={closeMobileMenu}
+                    className="block text-gray-600 hover:text-purple-600 py-2 text-base font-medium transition-colors"
+                  >
+                    Contact
+                  </Link>
+                </div>
+              </nav>
+
+              {/* Mobile Account Section */}
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Account</h3>
                 {isAuthenticated ? (
-                  <>
+                  <div className="space-y-4">
                     <div className="flex items-center space-x-3">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                          <span className="text-purple-600 font-medium text-sm">
-                            {currentUser?.name?.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="hidden md:block">
-                          <p className="text-sm font-medium text-gray-700">
-                            {currentUser?.name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {currentUser?.role}
-                          </p>
-                        </div>
+                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                        <span className="text-purple-600 font-medium text-sm">
+                          {currentUser?.name?.charAt(0).toUpperCase()}
+                        </span>
                       </div>
+                      <div>
+                        <p className="text-base font-medium text-gray-900">
+                          {currentUser?.name}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {currentUser?.role}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Link 
+                        to={routes.userAccount()} 
+                        onClick={closeMobileMenu}
+                        className="block text-gray-600 hover:text-purple-600 py-2 text-base font-medium transition-colors"
+                      >
+                        Account Settings
+                      </Link>
                       
                       {currentUser?.role === 'ADMIN' && (
                         <Link 
                           to={routes.admin()} 
-                          className="text-gray-600 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors"
+                          onClick={closeMobileMenu}
+                          className="block text-gray-600 hover:text-purple-600 py-2 text-base font-medium transition-colors"
                         >
-                          Admin
+                          Admin Panel
                         </Link>
                       )}
                       
                       <button 
-                        onClick={handleLogout}
-                        className="text-gray-600 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors"
+                        onClick={() => {
+                          closeMobileMenu()
+                          handleLogout()
+                        }}
+                        className="block w-full text-left text-gray-600 hover:text-purple-600 py-2 text-base font-medium transition-colors"
                       >
-                        Logout
+                        Sign Out
                       </button>
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  <>
-                    <Link to={routes.login()} className="text-gray-600 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors">
+                  <div className="space-y-3">
+                    <Link 
+                      to={routes.login()} 
+                      onClick={closeMobileMenu}
+                      className="block w-full text-center bg-purple-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors"
+                    >
                       Sign In
                     </Link>
-                    <Link to={routes.signup()} className="btn-primary text-sm">
+                    <Link 
+                      to={routes.signup()} 
+                      onClick={closeMobileMenu}
+                      className="block w-full text-center border-2 border-purple-600 text-purple-600 py-2 px-4 rounded-lg font-medium hover:bg-purple-600 hover:text-white transition-colors"
+                    >
                       Sign Up
                     </Link>
-                  </>
+                  </div>
                 )}
               </div>
-            </div>
 
-            {/* Mobile menu button */}
-            <div className="md:hidden">
-              <button className="text-gray-600 hover:text-purple-600 p-2">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
+              {/* Mobile Search Section */}
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Search</h3>
+                <SearchBar isMobile={true} />
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </header>
 
       {/* Main Content */}

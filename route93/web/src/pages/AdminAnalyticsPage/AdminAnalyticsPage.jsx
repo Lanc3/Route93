@@ -220,8 +220,8 @@ const AdminAnalyticsPage = () => {
 
           {/* Analytics Data */}
           <AdminAnalyticsCell
-            startDate={new Date(dateRange.startDate).toISOString()}
-            endDate={new Date(dateRange.endDate).toISOString()}
+            startDate={new Date(dateRange.startDate)}
+            endDate={new Date(dateRange.endDate)}
           />
         </div>
       </div>
