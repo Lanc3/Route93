@@ -5,8 +5,8 @@ import { toast } from '@redwoodjs/web/toast'
 import ProductReviews from 'src/components/ProductReviews/ProductReviews'
 
 export const QUERY = gql`
-  query FindProductQuery($id: Int!) {
-    product: product(id: $id) {
+  query FindProductQuery($slug: String!) {
+    product: productBySlug(slug: $slug) {
       id
       name
       description
