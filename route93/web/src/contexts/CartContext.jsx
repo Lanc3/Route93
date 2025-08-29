@@ -24,6 +24,7 @@ const ADD_TO_CART_MUTATION = gql`
       product {
         id
         name
+        slug
         price
         salePrice
         images
@@ -41,6 +42,7 @@ const UPDATE_CART_ITEM_MUTATION = gql`
       product {
         id
         name
+        slug
         price
         salePrice
         images
@@ -66,6 +68,7 @@ const SYNC_CART_MUTATION = gql`
       product {
         id
         name
+        slug
         price
         salePrice
         images

@@ -119,8 +119,8 @@ const CartPage = () => {
                           <div className="flex justify-between">
                             <div>
                               <h3 className="text-lg font-medium text-gray-900">
-                                <Link 
-                                  to={routes.product({ id: item.product.id })}
+                                <Link
+                                  to={routes.product({ slug: item.product.slug })}
                                   className="hover:text-purple-600 transition-colors"
                                 >
                                   {item.product.name}

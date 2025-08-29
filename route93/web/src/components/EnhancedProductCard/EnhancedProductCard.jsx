@@ -1,12 +1,29 @@
 import { Link, routes } from '@redwoodjs/router'
 import { useState } from 'react'
+import { useCart } from 'src/contexts/CartContext'
 
 const EnhancedProductCard = ({ product, index }) => {
   const [isHovered, setIsHovered] = useState(false)
+  const [isAddingToCart, setIsAddingToCart] = useState(false)
+  const { addItem } = useCart()
   
   // Calculate average rating and review count
   const averageRating = product.averageRating || 0
   const reviewCount = product.reviewCount || 0
+
+  // Handle adding item to cart
+  const handleAddToCart = async () => {
+    if (isAddingToCart) return
+
+    setIsAddingToCart(true)
+    try {
+      await addItem(product, 1)
+    } catch (error) {
+      console.error('Error adding item to cart:', error)
+    } finally {
+      setIsAddingToCart(false)
+    }
+  }
   
   // Generate star rating display
   const renderStars = (rating) => {
@@ -125,8 +142,12 @@ const EnhancedProductCard = ({ product, index }) => {
             View Details
           </Link>
           
-          <button className="add-to-cart-btn">
-            Add to Cart
+          <button
+            className={`add-to-cart-btn ${isAddingToCart ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={handleAddToCart}
+            disabled={isAddingToCart}
+          >
+            {isAddingToCart ? 'Adding...' : 'Add to Cart'}
           </button>
         </div>
 

@@ -18,11 +18,14 @@ const HomePage = () => {
       <EnhancedHero />
 
       {/* Purple Separator Bar - Hero to Products */}
+      <div className="mt-10">
       <ParallaxSeparator
         variant="medium"
         text="Discover Our Products"
         className="mt-0"
       />
+      </div>
+      
 
       {/* Enhanced Featured Products Section with Parallax */}
       <section className="py-16 bg-gradient-to-br from-gray-50 to-white">

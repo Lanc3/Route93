@@ -7,12 +7,12 @@
 
 [web]
   title = "Redwood App"
-  port = 8910
+  port = 8913
   apiUrl = "/api"
   includeEnvironmentVariables = [
   ]
 [api]
-  port = 8911
+  port = 8914
 [browser]
   open = true
 [notifications]
