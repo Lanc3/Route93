@@ -1,4 +1,5 @@
 import { Link, routes } from '@redwoodjs/router'
+import { toast } from '@redwoodjs/web/toast'
 
 const CurrentOrdersTab = ({ user }) => {
   if (!user) {
@@ -76,10 +77,23 @@ const CurrentOrdersTab = ({ user }) => {
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Current Orders</h3>
-          <p className="text-sm text-gray-500">
-            Track your active orders and their current status
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900">Current Orders</h3>
+              <p className="text-sm text-gray-500">
+                Track your active orders and their current status
+              </p>
+            </div>
+            <Link
+              to={routes.trackOrder()}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Track Order
+            </Link>
+          </div>
         </div>
 
         <div className="divide-y divide-gray-200">
@@ -138,7 +152,7 @@ const CurrentOrdersTab = ({ user }) => {
                       </p>
                     </div>
                     <div className="text-sm font-medium text-gray-900">
-                      {formatCurrency(item.totalPrice)}
+                      {formatCurrency(item.price * item.quantity)}
                     </div>
                   </div>
                 ))}

@@ -16,6 +16,9 @@ const Routes = () => {
   return (
     <Router useAuth={useAuth}>
       
+      
+      
+      
       <Set wrap={MainLayout}>
           <Route path="/payment-failed" page={PaymentFailedPage} name="paymentFailed" />
           <Route path="/forgot-password" page={ForgotPasswordPage} name="forgotPassword" />
@@ -26,6 +29,13 @@ const Routes = () => {
           <Route path="/order-confirmation/{id:Int}" page={OrderConfirmationPage} name="orderConfirmation" />
         </PrivateSet>
         <PrivateSet unauthenticated="home" roles="ADMIN">
+        <Route path="/admin-discount-code-edit" page={AdminDiscountCodeEditPage} name="adminDiscountCodeEdit" />
+        <Route path="/admin-discount-reports" page={AdminDiscountReportsPage} name="adminDiscountReports" />
+      
+      <Route path="/admin-discount-code-add" page={AdminDiscountCodeAddPage} name="adminDiscountCodeAdd" />
+      
+      <Route path="/admin-discount-codes" page={AdminDiscountCodesPage} name="adminDiscountCodes" />
+      
           <Route path="/admin/dashboard" page={AdminDashboardPage} name="adminDashboard" />
           <Route path="/admin/analytics" page={AdminAnalyticsPage} name="adminAnalytics" />
           <Route path="/admin/inventory" page={AdminInventoryPage} name="adminInventory" />

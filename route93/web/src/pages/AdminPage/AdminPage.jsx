@@ -162,6 +162,25 @@ const AdminPage = () => {
 
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center mb-4">
+                <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a.997.997 0 01-1.414 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                </div>
+                <h3 className="ml-3 text-lg font-medium text-gray-900">Discount Codes</h3>
+              </div>
+              <p className="text-gray-600 mb-4">Create and manage discount codes and promotions</p>
+              <div className="space-y-2">
+                <Link to={routes.adminDiscountCodes()} className="w-full btn-primary text-center block">
+                  Manage Discounts
+                </Link>
+                <Link to={routes.adminDiscountCodeAdd()} className="w-full btn-outline text-left block">Create Discount</Link>
+                <Link to={routes.adminDiscountReports()} className="w-full btn-outline text-left block">Discount Reports</Link>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center mb-4">
                 <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                   <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />

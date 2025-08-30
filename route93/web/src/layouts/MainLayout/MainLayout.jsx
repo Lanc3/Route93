@@ -4,10 +4,10 @@ import { useCart } from 'src/contexts/CartContext'
 import { useState, useEffect, useRef } from 'react'
 import SearchBar from 'src/components/SearchBar/SearchBar'
 import AnimatedLogo from 'src/components/AnimatedLogo/AnimatedLogo'
+import CartButton from 'src/components/CartButton/CartButton'
 
 const MainLayout = ({ children }) => {
   const { isAuthenticated, currentUser, logOut } = useAuth()
-  const { getCartCount } = useCart()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const mobileMenuRef = useRef(null)
   const mobileMenuButtonRef = useRef(null)
@@ -52,7 +52,7 @@ const MainLayout = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-lg border-b border-gray-200 relative">
+      <header className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50 backdrop-blur-sm bg-white/95">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Top row: Logo + Search + Account */}
           <div className="flex items-center justify-between py-3">
@@ -173,16 +173,7 @@ const MainLayout = ({ children }) => {
               </div>
               
               {/* Cart */}
-              <Link to={routes.cart()} className="relative p-2 text-gray-600 hover:text-purple-600 transition-colors">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m0 0H17M9 19.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM20.5 19.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                </svg>
-                {getCartCount() > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {getCartCount()}
-                  </span>
-                )}
-              </Link>
+              <CartButton />
 
               {/* Mobile menu button */}
               <div className="md:hidden">
@@ -211,7 +202,7 @@ const MainLayout = ({ children }) => {
         {isMobileMenuOpen && (
           <div 
             ref={mobileMenuRef}
-            className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-50"
+            className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-[60]"
           >
             <div className="px-4 py-6 space-y-6">
               {/* Mobile Navigation */}

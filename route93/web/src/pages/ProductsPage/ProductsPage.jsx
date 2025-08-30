@@ -3,8 +3,24 @@ import { Link, routes } from '@redwoodjs/router'
 import { Metadata } from '@redwoodjs/web'
 
 import ProductsCell from 'src/components/ProductsCell'
+import SearchBar from 'src/components/SearchBar'
+import AdvancedFilters from 'src/components/AdvancedFilters'
+import RecentlyViewedCell from 'src/components/RecentlyViewedCell'
 
-const ProductsPage = ({ search, categoryId, minPrice, maxPrice, inStock, sortBy, sortOrder }) => {
+const ProductsPage = ({
+  search,
+  categoryId,
+  minPrice,
+  maxPrice,
+  inStock,
+  sortBy,
+  sortOrder,
+  minRating,
+  tags,
+  collectionId,
+  brand,
+  hasVariants
+}) => {
   const [filters, setFilters] = useState({
     categoryId: null,
     minPrice: null,
@@ -15,6 +31,12 @@ const ProductsPage = ({ search, categoryId, minPrice, maxPrice, inStock, sortBy,
     sortOrder: 'desc',
     limit: 12,
     offset: 0,
+    // Enhanced filters
+    minRating: null,
+    tags: [],
+    collectionId: null,
+    brand: '',
+    hasVariants: null,
   })
 
   // Update filters when URL props change
@@ -28,8 +50,14 @@ const ProductsPage = ({ search, categoryId, minPrice, maxPrice, inStock, sortBy,
       inStock: inStock === 'true' ? true : null,
       sortBy: sortBy || 'createdAt',
       sortOrder: sortOrder || 'desc',
+      // Enhanced filters
+      minRating: minRating ? parseInt(minRating) : null,
+      tags: tags ? tags.split(',') : [],
+      collectionId: collectionId ? parseInt(collectionId) : null,
+      brand: brand || '',
+      hasVariants: hasVariants === 'true' ? true : hasVariants === 'false' ? false : null,
     }))
-  }, [search, categoryId, minPrice, maxPrice, inStock, sortBy, sortOrder])
+  }, [search, categoryId, minPrice, maxPrice, inStock, sortBy, sortOrder, minRating, tags, collectionId, brand, hasVariants])
 
   const handleFilterChange = (newFilters) => {
     setFilters({ ...filters, ...newFilters, offset: 0 })
@@ -90,7 +118,7 @@ const ProductsPage = ({ search, categoryId, minPrice, maxPrice, inStock, sortBy,
               {/* Sort Dropdown */}
               <div className="flex items-center space-x-4">
                 <label className="text-sm font-medium text-gray-700">Sort by:</label>
-                <select 
+                <select
                   className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   value={`${filters.sortBy}-${filters.sortOrder}`}
                   onChange={(e) => {
@@ -98,12 +126,15 @@ const ProductsPage = ({ search, categoryId, minPrice, maxPrice, inStock, sortBy,
                     handleSortChange(sortBy, sortOrder)
                   }}
                 >
+                  <option value="relevance-desc">Relevance</option>
                   <option value="createdAt-desc">Newest First</option>
                   <option value="createdAt-asc">Oldest First</option>
                   <option value="price-asc">Price: Low to High</option>
                   <option value="price-desc">Price: High to Low</option>
                   <option value="name-asc">Name: A to Z</option>
                   <option value="name-desc">Name: Z to A</option>
+                  <option value="rating-desc">Highest Rated</option>
+                  <option value="popularity-desc">Most Popular</option>
                 </select>
               </div>
             </div>
@@ -115,88 +146,32 @@ const ProductsPage = ({ search, categoryId, minPrice, maxPrice, inStock, sortBy,
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Filters Sidebar */}
             <div className="lg:w-64 flex-shrink-0">
-              <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Filters</h3>
-                
-                {/* Search */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Search Products
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    value={filters.search}
-                    onChange={(e) => handleFilterChange({ search: e.target.value })}
-                  />
-                </div>
-
-                {/* Price Range */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Price Range
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="number"
-                      placeholder="Min"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      value={filters.minPrice || ''}
-                      onChange={(e) => handleFilterChange({ minPrice: e.target.value ? parseFloat(e.target.value) : null })}
-                    />
-                    <span className="text-gray-500">to</span>
-                    <input
-                      type="number"
-                      placeholder="Max"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      value={filters.maxPrice || ''}
-                      onChange={(e) => handleFilterChange({ maxPrice: e.target.value ? parseFloat(e.target.value) : null })}
-                    />
-                  </div>
-                </div>
-
-                {/* Availability */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Availability
-                  </label>
-                  <div className="space-y-2">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                        checked={filters.inStock === true}
-                        onChange={(e) => handleFilterChange({ inStock: e.target.checked ? true : null })}
-                      />
-                      <span className="ml-2 text-sm text-gray-700">In Stock Only</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Clear Filters */}
-                <button 
-                  onClick={() => setFilters({
-                    categoryId: null,
-                    minPrice: null,
-                    maxPrice: null,
-                    inStock: null,
-                    search: '',
-                    sortBy: 'createdAt',
-                    sortOrder: 'desc',
-                    limit: 12,
-                    offset: 0,
-                  })}
-                  className="w-full btn-outline text-sm"
-                >
-                  Clear All Filters
-                </button>
-              </div>
+              <AdvancedFilters
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                onClearFilters={() => setFilters({
+                  categoryId: null,
+                  minPrice: null,
+                  maxPrice: null,
+                  inStock: null,
+                  search: '',
+                  sortBy: 'createdAt',
+                  sortOrder: 'desc',
+                  limit: 12,
+                  offset: 0,
+                  // Enhanced filters
+                  minRating: null,
+                  tags: [],
+                  collectionId: null,
+                  brand: '',
+                  hasVariants: null,
+                })}
+              />
             </div>
 
             {/* Products Grid */}
             <div className="flex-1">
-              <ProductsCell 
+              <ProductsCell
                 categoryId={filters.categoryId}
                 minPrice={filters.minPrice}
                 maxPrice={filters.maxPrice}
@@ -206,9 +181,22 @@ const ProductsPage = ({ search, categoryId, minPrice, maxPrice, inStock, sortBy,
                 sortOrder={filters.sortOrder}
                 limit={filters.limit}
                 offset={filters.offset}
+                // Enhanced parameters
+                minRating={filters.minRating}
+                tags={filters.tags}
+                collectionId={filters.collectionId}
+                brand={filters.brand}
+                hasVariants={filters.hasVariants}
               />
             </div>
           </div>
+
+          {/* Recently Viewed Section */}
+          {filters.search && (
+            <div className="mt-12">
+              <RecentlyViewedCell limit={6} />
+            </div>
+          )}
         </div>
       </div>
     </>

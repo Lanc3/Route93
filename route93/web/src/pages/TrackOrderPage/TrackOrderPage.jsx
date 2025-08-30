@@ -1,6 +1,56 @@
 import { useState } from 'react'
 import { Link, routes } from '@redwoodjs/router'
 import { Metadata } from '@redwoodjs/web'
+import { useQuery } from '@apollo/client'
+import { gql } from '@apollo/client'
+import { toast } from '@redwoodjs/web/toast'
+
+// GraphQL query to find order by number and email
+const FIND_ORDER_QUERY = gql`
+  query FindOrder($orderNumber: String!, $email: String!) {
+    orders: orders(where: {
+      orderNumber: { equals: $orderNumber }
+      user: {
+        email: { equals: $email }
+      }
+    }) {
+      id
+      orderNumber
+      status
+      totalAmount
+      shippingCost
+      taxAmount
+      createdAt
+      updatedAt
+      orderItems {
+        id
+        quantity
+        price
+        product {
+          id
+          name
+          images
+        }
+      }
+      shippingAddress {
+        firstName
+        lastName
+        address1
+        address2
+        city
+        state
+        zipCode
+        country
+        phone
+      }
+      user {
+        id
+        name
+        email
+      }
+    }
+  }
+`
 
 const TrackOrderPage = () => {
   const [orderNumber, setOrderNumber] = useState('')
@@ -13,60 +63,195 @@ const TrackOrderPage = () => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
-    
-    // Simulate API call
-    setTimeout(() => {
-      if (orderNumber.toLowerCase().includes('rt93')) {
-        setTrackingResult({
-          orderNumber: orderNumber,
-          status: 'In Transit',
-          estimatedDelivery: 'Tomorrow, Dec 28',
-          carrier: 'FedEx',
-          trackingNumber: 'FX123456789US',
-          timeline: [
+    setTrackingResult(null)
+
+    // For now, use a simple approach to find orders
+    // In a real implementation, you'd use Apollo Client properly
+    try {
+      // Simulate finding an order - replace with actual GraphQL query
+      if (orderNumber.trim()) {
+        // Mock order data for demonstration
+        // Replace this with actual GraphQL query
+        const mockOrder = {
+          id: 1,
+          orderNumber: orderNumber.trim().toUpperCase(),
+          status: 'SHIPPED',
+          totalAmount: 125.99,
+          shippingCost: 9.99,
+          taxAmount: 10.08,
+          createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+          orderItems: [
             {
-              status: 'Order Placed',
-              date: 'Dec 24, 2024 - 10:30 AM',
-              completed: true,
-              description: 'Your order has been confirmed and is being prepared.'
-            },
-            {
-              status: 'Processing',
-              date: 'Dec 24, 2024 - 2:15 PM',
-              completed: true,
-              description: 'Order is being picked and packed at our warehouse.'
-            },
-            {
-              status: 'Shipped',
-              date: 'Dec 25, 2024 - 9:00 AM',
-              completed: true,
-              description: 'Package has been picked up by the carrier.'
-            },
-            {
-              status: 'In Transit',
-              date: 'Dec 26, 2024 - 8:45 AM',
-              completed: true,
-              description: 'Package is on its way to the destination.'
-            },
-            {
-              status: 'Out for Delivery',
-              date: 'Dec 28, 2024',
-              completed: false,
-              description: 'Package will be delivered today.'
-            },
-            {
-              status: 'Delivered',
-              date: 'Estimated Dec 28, 2024',
-              completed: false,
-              description: 'Package will be delivered to your address.'
+              id: 1,
+              quantity: 2,
+              price: 25.00,
+              product: {
+                id: 1,
+                name: 'Sample Product',
+                images: ['https://via.placeholder.com/60x60?text=Product']
+              }
             }
-          ]
+          ],
+          shippingAddress: {
+            firstName: 'John',
+            lastName: 'Doe',
+            address1: '123 Main St',
+            city: 'Anytown',
+            state: 'CA',
+            zipCode: '12345',
+            country: 'US'
+          }
+        }
+
+        const timeline = generateTrackingTimeline(mockOrder)
+
+        setTrackingResult({
+          orderId: mockOrder.id,
+          orderNumber: mockOrder.orderNumber,
+          status: formatOrderStatus(mockOrder.status),
+          estimatedDelivery: calculateEstimatedDelivery(mockOrder),
+          carrier: 'FedEx',
+          trackingNumber: `FX${mockOrder.id.toString().padStart(9, '0')}US`,
+          order: mockOrder,
+          timeline: timeline
         })
       } else {
         setError('Order not found. Please check your order number and email address.')
       }
+    } catch (error) {
+      console.error('Error tracking order:', error)
+      setError('Unable to track order. Please try again later.')
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
+  }
+
+  // Helper function to generate tracking timeline based on order status
+  const generateTrackingTimeline = (order) => {
+    const createdDate = new Date(order.createdAt)
+    const now = new Date()
+
+    const timeline = [
+      {
+        status: 'Order Placed',
+        date: createdDate.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit'
+        }),
+        completed: true,
+        description: 'Your order has been confirmed and is being prepared.'
+      }
+    ]
+
+    // Add processing step if order is not just placed
+    if (now.getTime() - createdDate.getTime() > 3600000) { // 1 hour later
+      timeline.push({
+        status: 'Processing',
+        date: new Date(createdDate.getTime() + 3600000).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit'
+        }),
+        completed: ['PROCESSING', 'SHIPPED', 'DELIVERED', 'COMPLETED'].includes(order.status),
+        description: 'Order is being picked and packed at our warehouse.'
+      })
+    }
+
+    // Add shipped step
+    if (['SHIPPED', 'DELIVERED', 'COMPLETED'].includes(order.status)) {
+      timeline.push({
+        status: 'Shipped',
+        date: new Date(createdDate.getTime() + 7200000).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit'
+        }),
+        completed: ['SHIPPED', 'DELIVERED', 'COMPLETED'].includes(order.status),
+        description: 'Package has been picked up by the carrier.'
+      })
+    }
+
+    // Add in transit step
+    if (['SHIPPED', 'DELIVERED', 'COMPLETED'].includes(order.status)) {
+      timeline.push({
+        status: 'In Transit',
+        date: new Date(createdDate.getTime() + 10800000).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit'
+        }),
+        completed: ['SHIPPED', 'DELIVERED', 'COMPLETED'].includes(order.status),
+        description: 'Package is on its way to the destination.'
+      })
+    }
+
+    // Add out for delivery step
+    if (['DELIVERED', 'COMPLETED'].includes(order.status)) {
+      timeline.push({
+        status: 'Out for Delivery',
+        date: new Date(createdDate.getTime() + 14400000).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        }),
+        completed: ['DELIVERED', 'COMPLETED'].includes(order.status),
+        description: 'Package will be delivered today.'
+      })
+    }
+
+    // Add delivered step
+    if (['DELIVERED', 'COMPLETED'].includes(order.status)) {
+      timeline.push({
+        status: 'Delivered',
+        date: new Date(createdDate.getTime() + 18000000).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        }),
+        completed: ['DELIVERED', 'COMPLETED'].includes(order.status),
+        description: 'Package has been delivered successfully.'
+      })
+    }
+
+    return timeline
+  }
+
+  // Helper function to format order status for display
+  const formatOrderStatus = (status) => {
+    const statusMap = {
+      'PENDING': 'Order Placed',
+      'PROCESSING': 'Processing',
+      'SHIPPED': 'In Transit',
+      'DELIVERED': 'Delivered',
+      'COMPLETED': 'Completed',
+      'CANCELLED': 'Cancelled'
+    }
+    return statusMap[status] || status
+  }
+
+  // Helper function to calculate estimated delivery
+  const calculateEstimatedDelivery = (order) => {
+    const createdDate = new Date(order.createdAt)
+    const deliveryDate = new Date(createdDate.getTime() + 5 * 24 * 60 * 60 * 1000) // 5 days later
+
+    if (['DELIVERED', 'COMPLETED'].includes(order.status)) {
+      return 'Delivered'
+    }
+
+    return deliveryDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric'
+    })
   }
 
   return (

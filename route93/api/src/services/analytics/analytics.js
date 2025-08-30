@@ -391,6 +391,12 @@ export const userAnalytics = async ({ startDate, endDate }) => {
 
     console.log('Top customers:', topCustomers)
 
+    // Calculate return customer rate (customers with more than 1 order)
+    const returnCustomerCount = topCustomers.filter(c => c.totalOrders > 1).length
+    const returnCustomerRate = topCustomers.length > 0 ? (returnCustomerCount / topCustomers.length) * 100 : 0
+
+    console.log('Return customer rate:', returnCustomerRate)
+
     const result = {
       totalUsers: userStats,
       newUsersThisMonth,
@@ -398,7 +404,8 @@ export const userAnalytics = async ({ startDate, endDate }) => {
       userGrowth,
       topCustomers,
       usersByRegistrationDate: [], // Would need additional query
-      userActivity: [] // Would need additional query
+      userActivity: [], // Would need additional query
+      returnCustomerRate
     }
 
     console.log('User analytics result:', result)
@@ -412,7 +419,8 @@ export const userAnalytics = async ({ startDate, endDate }) => {
       userGrowth: 0,
       topCustomers: [],
       usersByRegistrationDate: [],
-      userActivity: []
+      userActivity: [],
+      returnCustomerRate: 0
     }
   }
 }
@@ -430,7 +438,7 @@ export const overallAnalytics = async ({ startDate, endDate }) => {
     // Calculate additional metrics
     const conversionRate = userData.totalUsers > 0 ? (salesData.totalOrders / userData.totalUsers) * 100 : 0
     const averageSessionValue = salesData.totalOrders > 0 ? salesData.totalRevenue / salesData.totalOrders : 0
-    
+
     // Calculate return customer rate (customers with more than 1 order)
     const returnCustomerCount = userData.topCustomers.filter(c => c.totalOrders > 1).length
     const returnCustomerRate = userData.topCustomers.length > 0 ? (returnCustomerCount / userData.topCustomers.length) * 100 : 0
@@ -455,6 +463,35 @@ export const overallAnalytics = async ({ startDate, endDate }) => {
       conversionRate: 0,
       averageSessionValue: 0,
       returnCustomerRate: 0
+    }
+  }
+}
+
+export const dashboardData = async ({ startDate, endDate, period = 'daily' }) => {
+
+  try {
+    console.log('Starting dashboardData with dates:', { startDate, endDate, period })
+    const [salesData, productData, userData] = await Promise.all([
+      salesReport({ startDate, endDate, period }),
+      productAnalytics({ startDate, endDate }),
+      userAnalytics({ startDate, endDate })
+    ])
+
+    const result = {
+      salesData,
+      productData,
+      userData
+    }
+
+    console.log('Dashboard data result:', result)
+    return result
+  } catch (error) {
+    console.error('Error generating dashboard data:', error)
+    // Return fallback data to prevent null return
+    return {
+      salesData: await salesReport({ startDate, endDate, period }),
+      productData: await productAnalytics({ startDate, endDate }),
+      userData: await userAnalytics({ startDate, endDate })
     }
   }
 }

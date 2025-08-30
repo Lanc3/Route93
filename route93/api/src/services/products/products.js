@@ -12,6 +12,12 @@ export const products = async ({
   sortOrder = 'desc',
   limit = 12,
   offset = 0,
+  // Enhanced parameters
+  minRating,
+  tags,
+  collectionId,
+  brand,
+  hasVariants,
 }) => {
   const where = {}
 
@@ -23,6 +29,15 @@ export const products = async ({
   // Category filter
   if (categoryId) {
     where.categoryId = categoryId
+  }
+
+  // Collection filter
+  if (collectionId) {
+    where.collections = {
+      some: {
+        collectionId: collectionId,
+      },
+    }
   }
 
   // Price range filter
@@ -37,13 +52,58 @@ export const products = async ({
     where.inventory = { gt: 0 }
   }
 
+  // Minimum rating filter
+  if (minRating) {
+    where.reviews = {
+      some: {
+        rating: { gte: minRating }
+      }
+    }
+  }
+
+  // Tags filter
+  if (tags && tags.length > 0) {
+    where.tags = {
+      contains: tags[0], // For now, filter by first tag
+    }
+  }
+
+  // Brand filter (assuming brand is stored in tags or description)
+  if (brand) {
+    where.OR = where.OR || []
+    where.OR.push(
+      { tags: { contains: brand } },
+      { description: { contains: brand } }
+    )
+  }
+
+  // Variants filter
+  if (hasVariants !== undefined) {
+    if (hasVariants) {
+      where.variants = {
+        some: {}
+      }
+    } else {
+      where.variants = {
+        none: {}
+      }
+    }
+  }
+
   // Search filter
   if (search) {
-    where.OR = [
-      { name: { contains: search } },
-      { description: { contains: search } },
-      { tags: { contains: search } },
+    const searchConditions = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+      { tags: { contains: search, mode: 'insensitive' } },
+      { sku: { contains: search, mode: 'insensitive' } },
     ]
+
+    if (where.OR) {
+      where.OR.push(...searchConditions)
+    } else {
+      where.OR = searchConditions
+    }
   }
 
   // Sort options
@@ -52,9 +112,18 @@ export const products = async ({
     orderBy.price = sortOrder
   } else if (sortBy === 'name') {
     orderBy.name = sortOrder
+  } else if (sortBy === 'rating') {
+    // Sort by average rating (simplified)
+    orderBy.reviews = {
+      _count: sortOrder
+    }
   } else if (sortBy === 'popularity') {
-    // For now, use createdAt as proxy for popularity
-    orderBy.createdAt = sortOrder
+    // Sort by review count as proxy for popularity
+    orderBy.reviews = {
+      _count: 'desc'
+    }
+  } else if (sortBy === 'newest') {
+    orderBy.createdAt = 'desc'
   } else {
     orderBy.createdAt = sortOrder
   }
@@ -79,9 +148,18 @@ export const products = async ({
           createdAt: 'desc',
         },
       },
+      variants: {
+        take: 1, // Include one variant for display
+      },
+      collections: {
+        include: {
+          collection: true,
+        },
+      },
       _count: {
         select: {
           reviews: true,
+          variants: true,
         },
       },
     },
@@ -95,6 +173,12 @@ export const productsCount = async ({
   inStock,
   status,
   search,
+  // Enhanced parameters
+  minRating,
+  tags,
+  collectionId,
+  brand,
+  hasVariants,
 }) => {
   const where = {}
 
@@ -103,26 +187,84 @@ export const productsCount = async ({
     where.status = status
   }
 
+  // Category filter
   if (categoryId) {
     where.categoryId = categoryId
   }
 
+  // Collection filter
+  if (collectionId) {
+    where.collections = {
+      some: {
+        collectionId: collectionId,
+      },
+    }
+  }
+
+  // Price range filter
   if ((minPrice !== undefined && minPrice !== null) || (maxPrice !== undefined && maxPrice !== null)) {
     where.price = {}
     if (minPrice !== undefined && minPrice !== null) where.price.gte = minPrice
     if (maxPrice !== undefined && maxPrice !== null) where.price.lte = maxPrice
   }
 
+  // In stock filter
   if (inStock) {
     where.inventory = { gt: 0 }
   }
 
+  // Minimum rating filter
+  if (minRating) {
+    where.reviews = {
+      some: {
+        rating: { gte: minRating }
+      }
+    }
+  }
+
+  // Tags filter
+  if (tags && tags.length > 0) {
+    where.tags = {
+      contains: tags[0],
+    }
+  }
+
+  // Brand filter
+  if (brand) {
+    where.OR = where.OR || []
+    where.OR.push(
+      { tags: { contains: brand } },
+      { description: { contains: brand } }
+    )
+  }
+
+  // Variants filter
+  if (hasVariants !== undefined) {
+    if (hasVariants) {
+      where.variants = {
+        some: {}
+      }
+    } else {
+      where.variants = {
+        none: {}
+      }
+    }
+  }
+
+  // Search filter
   if (search) {
-    where.OR = [
-      { name: { contains: search } },
-      { description: { contains: search } },
-      { tags: { contains: search } },
+    const searchConditions = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+      { tags: { contains: search, mode: 'insensitive' } },
+      { sku: { contains: search, mode: 'insensitive' } },
     ]
+
+    if (where.OR) {
+      where.OR.push(...searchConditions)
+    } else {
+      where.OR = searchConditions
+    }
   }
 
   return db.product.count({ where })
@@ -402,6 +544,277 @@ export const bulkUpdateInventory = async ({ updates }) => {
   )
 
   return updatedProducts
+}
+
+// Enhanced product queries
+export const featuredProducts = async ({ limit = 12 }) => {
+  return db.product.findMany({
+    where: {
+      status: 'ACTIVE',
+      inventory: { gt: 0 },
+    },
+    orderBy: {
+      reviews: {
+        _count: 'desc', // Most reviewed products
+      },
+    },
+    take: limit,
+    include: {
+      category: true,
+      reviews: {
+        take: 3,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      _count: {
+        select: {
+          reviews: true,
+        },
+      },
+    },
+  })
+}
+
+export const trendingProducts = async ({ limit = 12 }) => {
+  // Get products with most recent reviews (proxy for trending)
+  return db.product.findMany({
+    where: {
+      status: 'ACTIVE',
+      inventory: { gt: 0 },
+      reviews: {
+        some: {
+          createdAt: {
+            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+          },
+        },
+      },
+    },
+    orderBy: {
+      reviews: {
+        _count: 'desc',
+      },
+    },
+    take: limit,
+    include: {
+      category: true,
+      reviews: {
+        take: 3,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      _count: {
+        select: {
+          reviews: true,
+        },
+      },
+    },
+  })
+}
+
+export const relatedProducts = async ({ productId, limit = 6 }) => {
+  // Get the original product to find related ones
+  const product = await db.product.findUnique({
+    where: { id: productId },
+    include: {
+      category: true,
+      tags: true,
+    },
+  })
+
+  if (!product) {
+    return []
+  }
+
+  // Find products in same category or with similar tags
+  const relatedProducts = await db.product.findMany({
+    where: {
+      id: { not: productId },
+      status: 'ACTIVE',
+      inventory: { gt: 0 },
+      OR: [
+        { categoryId: product.categoryId },
+        { tags: { contains: product.tags?.split(',')[0] || '' } },
+      ],
+    },
+    orderBy: {
+      reviews: {
+        _count: 'desc',
+      },
+    },
+    take: limit,
+    include: {
+      category: true,
+      reviews: {
+        take: 3,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      _count: {
+        select: {
+          reviews: true,
+        },
+      },
+    },
+  })
+
+  return relatedProducts
+}
+
+// Cart recommendations based on items in cart
+export const cartRecommendations = async ({ productIds, limit = 6 }) => {
+  if (!productIds || productIds.length === 0) {
+    return []
+  }
+
+  // Get the categories and tags from the products in cart
+  const cartProducts = await db.product.findMany({
+    where: {
+      id: { in: productIds },
+      status: 'ACTIVE',
+    },
+    select: {
+      categoryId: true,
+      tags: true,
+    },
+  })
+
+  if (cartProducts.length === 0) {
+    return []
+  }
+
+  // Extract categories and tags from cart products
+  const categories = [...new Set(cartProducts.map(p => p.categoryId).filter(Boolean))]
+  const allTags = cartProducts
+    .map(p => p.tags)
+    .filter(Boolean)
+    .join(',')
+    .split(',')
+    .filter(tag => tag.trim())
+  const uniqueTags = [...new Set(allTags)]
+
+  // Build the OR conditions
+  const orConditions = []
+
+  // Products in same categories
+  if (categories.length > 0) {
+    orConditions.push({ categoryId: { in: categories } })
+  }
+
+  // Products with similar tags
+  if (uniqueTags.length > 0) {
+    orConditions.push({ tags: { contains: uniqueTags[0] } })
+  }
+
+  // Popular products in related categories (fallback)
+  orConditions.push({ categoryId: { not: null } })
+
+  // Find recommended products
+  let recommendations = await db.product.findMany({
+    where: {
+      id: { notIn: productIds }, // Exclude products already in cart
+      status: 'ACTIVE',
+      inventory: { gt: 0 },
+      OR: orConditions,
+    },
+    orderBy: [
+      { reviews: { _count: 'desc' } },
+      { createdAt: 'desc' },
+    ],
+    take: limit,
+    include: {
+      category: true,
+      reviews: {
+        take: 3,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      _count: {
+        select: {
+          reviews: true,
+        },
+      },
+    },
+  })
+
+  // If we don't have enough recommendations, fill with trending products
+  if (recommendations.length < limit) {
+    const additionalProducts = await db.product.findMany({
+      where: {
+        id: { notIn: [...productIds, ...recommendations.map(p => p.id)] },
+        status: 'ACTIVE',
+        inventory: { gt: 0 },
+        reviews: {
+          some: {}, // Has at least one review
+        },
+      },
+      orderBy: {
+        reviews: { _count: 'desc' },
+      },
+      take: limit - recommendations.length,
+      include: {
+        category: true,
+        reviews: {
+          take: 3,
+          orderBy: {
+            createdAt: 'desc',
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+            },
+          },
+        },
+      },
+      _count: {
+          select: {
+            reviews: true,
+          },
+        },
+      },
+    })
+
+    recommendations.push(...additionalProducts)
+  }
+
+  return recommendations
 }
 
 export const Product = {

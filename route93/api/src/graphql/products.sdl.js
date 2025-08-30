@@ -48,11 +48,17 @@ export const schema = gql`
       sortOrder: String
       limit: Int
       offset: Int
+      # Enhanced search parameters
+      minRating: Float
+      tags: [String!]
+      collectionId: Int
+      brand: String
+      hasVariants: Boolean
     ): [Product!]! @skipAuth
-    
+
     product(id: Int!): Product @skipAuth
     productBySlug(slug: String!): Product @skipAuth
-    
+
     productsCount(
       categoryId: Int
       minPrice: Float
@@ -60,8 +66,14 @@ export const schema = gql`
       inStock: Boolean
       status: String
       search: String
+      # Enhanced search parameters
+      minRating: Float
+      tags: [String!]
+      collectionId: Int
+      brand: String
+      hasVariants: Boolean
     ): Int! @skipAuth
-    
+
     # Inventory-specific queries
     inventoryProducts(
       lowStockThreshold: Int
@@ -72,8 +84,14 @@ export const schema = gql`
       offset: Int
       search: String
     ): [Product!]! @requireAuth(roles: ["ADMIN"])
-    
+
     inventoryStats: InventoryStats! @requireAuth(roles: ["ADMIN"])
+
+    # Enhanced product queries
+    featuredProducts(limit: Int): [Product!]! @skipAuth
+    trendingProducts(limit: Int): [Product!]! @skipAuth
+    relatedProducts(productId: Int!, limit: Int): [Product!]! @skipAuth
+    cartRecommendations(productIds: [Int!]!, limit: Int): [Product!]! @skipAuth
   }
 
   type Mutation {

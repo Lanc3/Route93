@@ -3,6 +3,8 @@ import { Link, routes, navigate } from '@redwoodjs/router'
 import { Metadata } from '@redwoodjs/web'
 import { useCart } from 'src/contexts/CartContext'
 import { useAuth } from 'src/auth'
+import CartRecommendations from 'src/components/CartRecommendations/CartRecommendations'
+import DiscountInput from 'src/components/DiscountInput/DiscountInput'
 
 const CartPage = () => {
   const { items, updateQuantity, removeItem, getCartTotal, getCartCount, loading } = useCart()
@@ -230,6 +232,13 @@ const CartPage = () => {
                   </div>
                 </div>
 
+                {/* Discount Input */}
+                {isAuthenticated && (
+                  <div className="mt-6">
+                    <DiscountInput />
+                  </div>
+                )}
+
                 <div className="mt-6 space-y-3">
                   <button
                     onClick={() => {
@@ -267,6 +276,13 @@ const CartPage = () => {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Recommendations Section */}
+        {items.length > 0 && (
+          <div className="mt-12">
+            <CartRecommendations limit={4} />
           </div>
         )}
       </div>

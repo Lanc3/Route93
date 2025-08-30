@@ -1,6 +1,43 @@
 import { Link, routes } from '@redwoodjs/router'
+import { useCart } from 'src/contexts/CartContext'
+import { toast } from '@redwoodjs/web/toast'
 
 const PurchaseHistoryTab = ({ user }) => {
+  const { addItem } = useCart()
+
+  const handleReorder = async (order) => {
+    if (!order.orderItems || order.orderItems.length === 0) {
+      toast.error('No items found in this order')
+      return
+    }
+
+    let successCount = 0
+    let errorCount = 0
+
+    for (const item of order.orderItems) {
+      if (item.product) {
+        try {
+          await addItem(item.product, item.quantity)
+          successCount++
+        } catch (error) {
+          console.error('Error adding item to cart:', error)
+          errorCount++
+        }
+      } else {
+        errorCount++
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`Added ${successCount} item${successCount > 1 ? 's' : ''} to cart`)
+      if (errorCount > 0) {
+        toast.warning(`${errorCount} item${errorCount > 1 ? 's' : ''} could not be added`)
+      }
+    } else {
+      toast.error('Unable to add items to cart')
+    }
+  }
+
   if (!user) {
     return (
       <div className="text-center py-12">
@@ -59,10 +96,23 @@ const PurchaseHistoryTab = ({ user }) => {
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Purchase History</h3>
-          <p className="text-sm text-gray-500">
-            View your completed orders and purchase history
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900">Purchase History</h3>
+              <p className="text-sm text-gray-500">
+                View your completed orders and purchase history
+              </p>
+            </div>
+            <Link
+              to={routes.trackOrder()}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Track Order
+            </Link>
+          </div>
         </div>
 
         <div className="divide-y divide-gray-200">
@@ -114,7 +164,7 @@ const PurchaseHistoryTab = ({ user }) => {
                       </p>
                     </div>
                     <div className="text-sm font-medium text-gray-900">
-                      {formatCurrency(item.totalPrice)}
+                      {formatCurrency(item.price * item.quantity)}
                     </div>
                   </div>
                 ))}
@@ -172,7 +222,10 @@ const PurchaseHistoryTab = ({ user }) => {
                 >
                   View Details
                 </Link>
-                <button className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                <button
+                  onClick={() => handleReorder(order)}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                >
                   Reorder
                 </button>
               </div>
