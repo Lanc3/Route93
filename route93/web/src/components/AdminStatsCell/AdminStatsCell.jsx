@@ -66,7 +66,7 @@ export const Success = ({ adminStats }) => {
     },
     {
       name: 'Total Revenue',
-      value: `$${adminStats.totalRevenue.toLocaleString()}`,
+      value: `€${adminStats.totalRevenue.toLocaleString()}`,
       icon: '💰',
       color: 'bg-yellow-500'
     },

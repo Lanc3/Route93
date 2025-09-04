@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@redwoodjs/web'
 import { toast } from '@redwoodjs/web/toast'
 import { navigate, routes } from '@redwoodjs/router'
+import ImageUploader from 'src/components/ImageUploader/ImageUploader'
 
 const GET_CATEGORIES = gql`
   query GetCategoriesForProduct {
@@ -113,7 +114,7 @@ const ProductForm = ({ product = null, onSave, onCancel }) => {
       const slug = value
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
+        .replace(/^-|-€/g, '')
       setFormData(prev => ({ ...prev, slug }))
     }
   }
@@ -252,7 +253,7 @@ const ProductForm = ({ product = null, onSave, onCancel }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
-              Regular Price * ($)
+              Regular Price * (€)
             </label>
             <input
               type="number"
@@ -271,7 +272,7 @@ const ProductForm = ({ product = null, onSave, onCancel }) => {
 
           <div>
             <label htmlFor="salePrice" className="block text-sm font-medium text-gray-700 mb-2">
-              Sale Price ($)
+              Sale Price (€)
             </label>
             <input
               type="number"
@@ -372,21 +373,95 @@ const ProductForm = ({ product = null, onSave, onCancel }) => {
 
         {/* Images */}
         <div>
-          <label htmlFor="images" className="block text-sm font-medium text-gray-700 mb-2">
-            Images (URLs)
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Product Images
           </label>
-          <input
-            type="text"
-            id="images"
-            name="images"
-            value={formData.images}
-            onChange={handleInputChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
+          
+          {/* Current Images (if editing) */}
+          {isEditing && formData.images && (
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-gray-600 mb-2">Current Images</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+                {(() => {
+                  try {
+                    const currentImages = JSON.parse(formData.images)
+                    return Array.isArray(currentImages) ? currentImages.map((url, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={url}
+                          alt={`${formData.name} ${index + 1}`}
+                          className="w-full h-20 object-cover rounded border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updatedImages = currentImages.filter((_, i) => i !== index)
+                            setFormData({
+                              ...formData,
+                              images: JSON.stringify(updatedImages)
+                            })
+                          }}
+                          className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    )) : []
+                  } catch {
+                    return []
+                  }
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* Image Uploader */}
+          <ImageUploader
+            folder="products"
+            multiple={true}
+            maxFiles={8}
+            onUpload={(uploadedImage) => {
+              try {
+                const currentImages = formData.images ? JSON.parse(formData.images) : []
+                const updatedImages = Array.isArray(currentImages) ? currentImages : []
+                updatedImages.push(uploadedImage.secureUrl)
+                
+                setFormData({
+                  ...formData,
+                  images: JSON.stringify(updatedImages)
+                })
+              } catch {
+                setFormData({
+                  ...formData,
+                  images: JSON.stringify([uploadedImage.secureUrl])
+                })
+              }
+            }}
+            className="mb-4"
           />
-          <p className="text-gray-500 text-sm mt-1">
-            Enter image URLs separated by commas, or leave empty for placeholder.
-          </p>
+
+          {/* Legacy URL Input (for backward compatibility) */}
+          <details className="mt-4">
+            <summary className="text-sm text-gray-600 cursor-pointer hover:text-gray-800">
+              Or add image URLs manually (advanced)
+            </summary>
+            <div className="mt-2">
+              <input
+                type="text"
+                id="images"
+                name="images"
+                value={formData.images}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder='["https://example.com/image1.jpg", "https://example.com/image2.jpg"]'
+              />
+              <p className="text-gray-500 text-sm mt-1">
+                Enter as JSON array of URLs, or use the uploader above.
+              </p>
+            </div>
+          </details>
         </div>
 
         {/* Tags */}

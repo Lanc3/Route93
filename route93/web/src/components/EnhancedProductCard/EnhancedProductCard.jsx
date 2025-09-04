@@ -125,11 +125,11 @@ const EnhancedProductCard = ({ product, index }) => {
         <div className="price-display">
           {product.onSale && product.originalPrice && (
             <span className="text-gray-400 line-through text-lg mr-2">
-              ${product.originalPrice}
+              €{product.originalPrice}
             </span>
           )}
           <span className="text-2xl font-bold text-green-600">
-            ${product.displayPrice}
+            €{product.displayPrice}
           </span>
         </div>
 

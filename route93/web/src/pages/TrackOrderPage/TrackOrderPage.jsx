@@ -8,12 +8,7 @@ import { toast } from '@redwoodjs/web/toast'
 // GraphQL query to find order by number and email
 const FIND_ORDER_QUERY = gql`
   query FindOrder($orderNumber: String!, $email: String!) {
-    orders: orders(where: {
-      orderNumber: { equals: $orderNumber }
-      user: {
-        email: { equals: $email }
-      }
-    }) {
+    order: findOrderByNumberAndEmail(orderNumber: $orderNumber, email: $email) {
       id
       orderNumber
       status

@@ -232,8 +232,8 @@ export const Success = ({ product }) => {
                 <div className="flex items-center space-x-2">
                   {hasDiscount ? (
                     <>
-                      <span className="text-3xl font-bold text-purple-600">${product.salePrice.toFixed(2)}</span>
-                      <span className="text-xl text-gray-500 line-through">${product.price.toFixed(2)}</span>
+                      <span className="text-3xl font-bold text-purple-600">€{product.salePrice.toFixed(2)}</span>
+                      <span className="text-xl text-gray-500 line-through">€{product.price.toFixed(2)}</span>
                       <span className="bg-red-100 text-red-800 text-sm font-semibold px-2 py-1 rounded">
                         {discountPercent}% OFF
                       </span>
@@ -498,7 +498,7 @@ export const Success = ({ product }) => {
                         </svg>
                         <div>
                           <p className="font-medium text-gray-900">Free Standard Shipping</p>
-                          <p className="text-gray-600 text-sm">On orders over $50 (5-7 business days)</p>
+                          <p className="text-gray-600 text-sm">On orders over €50 (5-7 business days)</p>
                         </div>
                       </div>
                       <div className="flex items-start space-x-3">
@@ -507,7 +507,7 @@ export const Success = ({ product }) => {
                         </svg>
                         <div>
                           <p className="font-medium text-gray-900">Express Shipping</p>
-                          <p className="text-gray-600 text-sm">$9.99 (2-3 business days)</p>
+                          <p className="text-gray-600 text-sm">€9.99 (2-3 business days)</p>
                         </div>
                       </div>
                       <div className="flex items-start space-x-3">
@@ -516,7 +516,7 @@ export const Success = ({ product }) => {
                         </svg>
                         <div>
                           <p className="font-medium text-gray-900">Overnight Shipping</p>
-                          <p className="text-gray-600 text-sm">$19.99 (1 business day)</p>
+                          <p className="text-gray-600 text-sm">€19.99 (1 business day)</p>
                         </div>
                       </div>
                     </div>

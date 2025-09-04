@@ -90,7 +90,7 @@ export const Failure = ({ error }) => (
 )
 
 export const Success = ({ orders, ordersCount }) => {
-  const formatPrice = (price) => `$${price.toFixed(2)}`
+  const formatPrice = (price) => `€${price.toFixed(2)}`
   const formatDate = (date) => new Date(date).toLocaleDateString()
   const formatDateTime = (date) => new Date(date).toLocaleString()
 

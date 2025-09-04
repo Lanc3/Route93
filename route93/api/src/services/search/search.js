@@ -153,9 +153,7 @@ export const searchSuggestions = async ({ query, limit = 10 }) => {
     },
     take: limit,
     orderBy: {
-      _count: {
-        reviews: 'desc',
-      },
+      name: 'asc',
     },
   })
 

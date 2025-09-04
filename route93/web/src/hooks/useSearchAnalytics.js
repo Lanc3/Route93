@@ -96,7 +96,6 @@ export const useSearchAnalytics = () => {
     try {
       // This will be handled by the RecentlyViewedCell component
       // We could add additional tracking here if needed
-      console.log('Tracking recently viewed:', productId)
     } catch (error) {
       console.error('Error tracking recently viewed:', error)
     }

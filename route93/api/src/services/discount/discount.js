@@ -298,8 +298,6 @@ export const discountAnalytics = async ({ startDate, endDate }, { context }) => 
   requireAuth({ roles: ['ADMIN'] }, { context })
 
   try {
-    console.log('Starting discountAnalytics with dates:', { startDate, endDate })
-
     const { startDate: start, endDate: end } = getDateRange(startDate, endDate)
 
     // Get basic discount code statistics
@@ -316,7 +314,6 @@ export const discountAnalytics = async ({ startDate, endDate }, { context }) => 
       })
     ])
 
-    console.log('Basic stats:', { totalCodes, activeCodes, orderDiscountsCount: orderDiscounts.length })
 
     // Calculate total usage and amounts
     const totalUsageCount = orderDiscounts.length
@@ -439,7 +436,6 @@ export const discountAnalytics = async ({ startDate, endDate }, { context }) => 
       monthlyDiscountTrends
     }
 
-    console.log('Discount analytics result:', result)
     return result
   } catch (error) {
     console.error('Error generating discount analytics:', error)

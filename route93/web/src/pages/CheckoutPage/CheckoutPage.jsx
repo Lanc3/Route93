@@ -7,6 +7,8 @@ import { useCart } from 'src/contexts/CartContext'
 import { useAuth } from 'src/auth'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
+import { formatPrice, calculateCartVat, calculateShippingVat } from 'src/lib/currency'
+import { ALL_COUNTRIES } from 'src/lib/countries'
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.REDWOOD_ENV_STRIPE_PUBLISHABLE_KEY || 'pk_test_51234567890abcdef')
@@ -83,7 +85,7 @@ const CheckoutForm = () => {
     city: '',
     state: '',
     zipCode: '',
-    country: 'US'
+    country: 'IE'
   })
   
   const [billingAddress, setBillingAddress] = useState({
@@ -94,17 +96,24 @@ const CheckoutForm = () => {
     city: '',
     state: '',
     zipCode: '',
-    country: 'US'
+    country: 'IE'
   })
   
   const [useSameAddress, setUseSameAddress] = useState(true)
   const [shippingMethod, setShippingMethod] = useState('standard')
   
-  // Calculate totals
-  const subtotal = getCartTotal()
-  const shipping = shippingMethod === 'express' ? 15.99 : shippingMethod === 'overnight' ? 29.99 : 5.99
-  const tax = subtotal * 0.08 // 8% tax
-  const total = subtotal + shipping + tax
+  // VAT calculation based on customer location
+  const customerCountry = shippingAddress.country || 'IE'
+  const vatCalculation = calculateCartVat(items, customerCountry)
+  
+  // Calculate totals with VAT
+  const baseShipping = shippingMethod === 'express' ? 15.99 : shippingMethod === 'overnight' ? 29.99 : 5.99
+  const shippingVatCalc = calculateShippingVat(baseShipping, vatCalculation.customerType)
+  
+  const subtotal = vatCalculation.totalNetPrice
+  const vatAmount = vatCalculation.totalVatAmount + shippingVatCalc.vatAmount
+  const shipping = shippingVatCalc.grossPrice
+  const total = subtotal + vatAmount + baseShipping
 
   // We'll create the payment intent after order creation
   // No need for initial payment intent creation
@@ -404,12 +413,6 @@ const CheckoutForm = () => {
     setProcessing(false)
   }
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(price)
-  }
 
   if (items.length === 0) {
     return (
@@ -537,9 +540,43 @@ const CheckoutForm = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     required
                   >
-                    <option value="US">United States</option>
-                    <option value="CA">Canada</option>
+                    <option value="">Select a country</option>
+                    {ALL_COUNTRIES.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.name} {country.isEU ? '(EU)' : ''}
+                      </option>
+                    ))}
                   </select>
+                  
+                  {/* VAT Information */}
+                  {shippingAddress.country && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      {vatCalculation.customerType === 'B2C' && (
+                        <div className="flex items-center text-green-600">
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Irish VAT (23%) will be added to your order
+                        </div>
+                      )}
+                      {vatCalculation.customerType === 'B2B_EU' && (
+                        <div className="flex items-center text-blue-600">
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          EU Reverse Charge - No VAT charged (B2B transaction)
+                        </div>
+                      )}
+                      {vatCalculation.customerType === 'B2B_NON_EU' && (
+                        <div className="flex items-center text-purple-600">
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Export Sale - No VAT charged
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -651,17 +688,33 @@ const CheckoutForm = () => {
               {/* Totals */}
               <div className="space-y-3 pt-4 border-t">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
+                  <span className="text-gray-600">Subtotal (ex VAT)</span>
                   <span className="font-medium">{formatPrice(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping</span>
-                  <span className="font-medium">{formatPrice(shipping)}</span>
+                  <span className="text-gray-600">Shipping (ex VAT)</span>
+                  <span className="font-medium">{formatPrice(baseShipping)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Tax</span>
-                  <span className="font-medium">{formatPrice(tax)}</span>
-                </div>
+                {vatAmount > 0 && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">VAT ({vatCalculation.customerType === 'B2C' ? '23%' : 'Various'})</span>
+                      <span className="font-medium">{formatPrice(vatAmount)}</span>
+                    </div>
+                    {vatCalculation.reverseCharge && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">EU Reverse Charge Applied</span>
+                        <span className="text-gray-500">€0.00</span>
+                      </div>
+                    )}
+                  </>
+                )}
+                {vatCalculation.customerType === 'B2B_NON_EU' && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Export Sale (No VAT)</span>
+                    <span className="text-gray-500">€0.00</span>
+                  </div>
+                )}
                 <div className="border-t pt-3">
                   <div className="flex justify-between">
                     <span className="text-lg font-semibold text-gray-900">Total</span>

@@ -1,3 +1,5 @@
+import { gql } from 'apollo-server-core'
+
 export const schema = gql`
   type Order {
     id: Int!
@@ -17,6 +19,20 @@ export const schema = gql`
     billingAddressId: Int!
     orderItems: [OrderItem]!
     payments: [Payment]!
+    # Tracking fields
+    trackingNumber: String
+    carrier: String
+    shippedAt: DateTime
+    deliveredAt: DateTime
+    estimatedDelivery: DateTime
+    trackingEvents: [TrackingEvent]
+  }
+
+  type TrackingEvent {
+    date: DateTime!
+    status: String!
+    location: String
+    description: String!
   }
 
   type Query {
@@ -30,6 +46,7 @@ export const schema = gql`
       offset: Int
     ): [Order!]! @requireAuth(roles: ["ADMIN"])
     order(id: Int!): Order @requireAuth
+    findOrderByNumberAndEmail(orderNumber: String!, email: String!): Order @skipAuth
     ordersCount(
       status: String
       userId: Int
@@ -85,10 +102,20 @@ export const schema = gql`
     billingAddressId: Int
   }
 
+  input UpdateTrackingInput {
+    trackingNumber: String
+    carrier: String
+    shippedAt: DateTime
+    deliveredAt: DateTime
+    estimatedDelivery: DateTime
+    trackingEvents: String # JSON string of tracking events
+  }
+
   type Mutation {
     createOrder(input: CreateOrderInput!): Order! @requireAuth
     updateOrder(id: Int!, input: UpdateOrderInput!): Order! @requireAuth(roles: ["ADMIN"])
     updateOrderStatus(id: Int!, status: String!): Order! @requireAuth(roles: ["ADMIN"])
+    updateTrackingInfo(id: Int!, input: UpdateTrackingInput!): Order! @requireAuth(roles: ["ADMIN"])
     deleteOrder(id: Int!): Order! @requireAuth(roles: ["ADMIN"])
   }
 `

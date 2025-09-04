@@ -2,6 +2,7 @@ import { createContext, useContext, useReducer, useEffect } from 'react'
 import { useAuth } from 'src/auth'
 import { useMutation } from '@redwoodjs/web'
 import { toast } from '@redwoodjs/web/toast'
+import { formatPrice } from 'src/lib/currency'
 
 const CartContext = createContext()
 

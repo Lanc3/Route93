@@ -26,8 +26,31 @@ model User {
   reviews             Review[]
   searchAnalytics     SearchAnalytics[]
   recentlyViewed      RecentlyViewed[]
+  mediaAssets         MediaAsset[]
 
   @@map("users")
+}
+
+model MediaAsset {
+  id           Int      @id @default(autoincrement())
+  publicId     String   @unique // Cloudinary public ID
+  url          String   // Cloudinary URL
+  secureUrl    String   // HTTPS URL
+  format       String   // jpg, png, webp, etc.
+  width        Int
+  height       Int
+  bytes        Int      // File size in bytes
+  originalName String   // Original filename
+  altText      String?  // Alt text for accessibility
+  tags         String?  // JSON array of tags
+  folder       String?  // Cloudinary folder path
+  uploadedBy   Int      // User who uploaded the image
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  uploader     User     @relation(fields: [uploadedBy], references: [id])
+
+  @@map("media_assets")
 }
 
 model Product {
@@ -40,7 +63,9 @@ model Product {
   slug        String              @unique
   status      String              @default("ACTIVE")
   inventory   Int                 @default(0)
-  images      String?
+  images      String?             // Keep for backward compatibility
+  mediaAssets String?             // JSON array of MediaAsset IDs
+  primaryImageId Int?             // Primary image MediaAsset ID
   tags        String?
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
@@ -110,6 +135,7 @@ model Category {
   slug        String     @unique
   parentId    Int?
   image       String?
+  vatRate     Float      @default(23.0) // Default Irish standard VAT rate
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
@@ -158,12 +184,20 @@ model Order {
   userId            Int
   shippingAddressId Int
   billingAddressId  Int
+  // Tracking fields
+  trackingNumber    String?
+  carrier           String?     @default("An Post")
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+  estimatedDelivery DateTime?
+  trackingEvents    Json?       // Store tracking history as JSON
   orderItems        OrderItem[]
   orderDiscounts    OrderDiscount[]
   billingAddress    Address     @relation("BillingAddress", fields: [billingAddressId], references: [id])
   shippingAddress   Address     @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
   user              User        @relation(fields: [userId], references: [id])
   payments          Payment[]
+  taxRecord         TaxRecord?
 
   @@map("orders")
 }
@@ -360,4 +394,99 @@ model OrderDiscount {
   discount       DiscountCode @relation(fields: [discountCodeId], references: [id])
 
   @@map("order_discounts")
+}
+
+model TaxRate {
+  id          Int      @id @default(autoincrement())
+  name        String   // "Standard", "Reduced", "Zero", "Exempt"
+  rate        Float    // VAT rate as percentage (e.g., 23.0 for 23%)
+  description String?
+  country     String   @default("IE")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  taxRecords  TaxRecord[]
+
+  @@map("tax_rates")
+}
+
+model TaxRecord {
+  id              Int      @id @default(autoincrement())
+  orderId         Int      @unique
+  orderNumber     String
+  customerType    String   // "B2C", "B2B_IE", "B2B_EU", "B2B_NON_EU"
+  customerCountry String   @default("IE")
+  customerVatNumber String?
+  
+  // Order totals
+  subtotal        Float    // Order total before VAT
+  vatAmount       Float    // Total VAT charged
+  totalAmount     Float    // Final amount including VAT
+  
+  // Tax breakdown
+  standardVat     Float    @default(0) // VAT at 23%
+  reducedVat      Float    @default(0) // VAT at 13.5%
+  secondReducedVat Float   @default(0) // VAT at 9%
+  zeroVat         Float    @default(0) // VAT at 0%
+  exemptAmount    Float    @default(0) // Exempt from VAT
+  
+  // Compliance fields
+  vatNumber       String?  // Our VAT number
+  invoiceNumber   String?  // Invoice reference
+  reverseCharge   Boolean  @default(false) // EU B2B reverse charge
+  
+  // Reporting periods
+  taxPeriod       String   // "2024-Q1", "2024-01", etc.
+  reportingYear   Int
+  reportingQuarter Int?
+  reportingMonth  Int?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  taxRateId       Int?
+  taxRate         TaxRate? @relation(fields: [taxRateId], references: [id])
+
+  @@map("tax_records")
+}
+
+model TaxReturn {
+  id                Int      @id @default(autoincrement())
+  period            String   // "2024-Q1", "2024-01"
+  periodType        String   // "monthly", "quarterly"
+  startDate         DateTime
+  endDate           DateTime
+  
+  // VAT Summary
+  totalSales        Float    @default(0)
+  totalVatCollected Float    @default(0)
+  totalVatDue       Float    @default(0)
+  
+  // VAT breakdown by rate
+  standardVatSales  Float    @default(0)
+  standardVatAmount Float    @default(0)
+  reducedVatSales   Float    @default(0)
+  reducedVatAmount  Float    @default(0)
+  secondReducedVatSales Float @default(0)
+  secondReducedVatAmount Float @default(0)
+  zeroVatSales      Float    @default(0)
+  exemptSales       Float    @default(0)
+  
+  // EU transactions
+  euB2BSales        Float    @default(0)
+  euB2CSales        Float    @default(0)
+  
+  // Filing information
+  status            String   @default("DRAFT") // DRAFT, FILED, PAID
+  filedAt           DateTime?
+  filedBy           String?
+  rosReference      String?  // Revenue Online Service reference
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([period])
+  @@map("tax_returns")
 }

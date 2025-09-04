@@ -34,7 +34,6 @@ export const handler = async (event, context) => {
           userName: user.name
         })
         
-        console.log(`Password reset email sent to ${user.email}`)
         return user
       } catch (error) {
         console.error('Password reset email failed:', error)

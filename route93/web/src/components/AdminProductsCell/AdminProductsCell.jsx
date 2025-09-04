@@ -75,7 +75,7 @@ export const Failure = ({ error }) => (
 )
 
 export const Success = ({ products, productsCount }) => {
-  const formatPrice = (price) => `$${price.toFixed(2)}`
+  const formatPrice = (price) => `€${price.toFixed(2)}`
   const formatDate = (date) => new Date(date).toLocaleDateString()
 
   const [deleteProduct] = useMutation(DELETE_PRODUCT, {

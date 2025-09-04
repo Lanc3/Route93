@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useMutation, gql } from '@apollo/client'
+import { useMutation, useQuery, gql, useLazyQuery } from '@apollo/client'
 import { useCart } from 'src/contexts/CartContext'
 import { toast } from '@redwoodjs/web/toast'
 
-const VALIDATE_DISCOUNT_MUTATION = gql`
-  mutation ValidateDiscountCode($code: String!) {
+const VALIDATE_DISCOUNT_QUERY = gql`
+  query ValidateDiscountCode($code: String!) {
     validateDiscountCode(code: $code) {
       isValid
       discountCode {
@@ -54,7 +54,7 @@ const DiscountInput = ({ className = '', compact = false }) => {
   const [appliedDiscount, setAppliedDiscount] = useState(null)
   const { getCartTotal } = useCart()
 
-  const [validateDiscount] = useMutation(VALIDATE_DISCOUNT_MUTATION)
+  const [validateDiscount] = useLazyQuery(VALIDATE_DISCOUNT_QUERY)
   const [applyDiscount] = useMutation(APPLY_DISCOUNT_MUTATION)
   const [removeDiscount] = useMutation(REMOVE_DISCOUNT_MUTATION)
 

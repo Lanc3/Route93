@@ -66,8 +66,6 @@ export const createPayment = async ({ input }) => {
       await sendOrderConfirmationEmailById({
         orderId: input.orderId
       })
-      
-      console.log(`Order confirmation email sent for order ${input.orderId}`)
     } catch (emailError) {
       console.error('Failed to send order confirmation email:', emailError)
       // Don't throw error here - payment was successful, email failure shouldn't break the flow
@@ -145,8 +143,6 @@ export const resendOrderConfirmationEmail = async ({ orderId }) => {
       orderId: orderId
     })
     
-    console.log(`Order confirmation email resent for order ${orderId}`)
-    
     return { success: true, message: 'Order confirmation email sent successfully' }
     
   } catch (error) {
@@ -194,7 +190,7 @@ export const createPaymentIntent = async ({ input }) => {
           }
         })
       } catch (error) {
-        console.log('No existing payment record to update, will create during order processing')
+        // No existing payment record to update, will create during order processing
       }
     }
 
@@ -243,8 +239,6 @@ export const confirmPayment = async (paymentIntentId) => {
           await sendOrderConfirmationEmailById({
             orderId: orderId
           })
-          
-          console.log(`Order confirmation email sent for order ${orderId} via webhook`)
         } catch (emailError) {
           console.error('Failed to send order confirmation email via webhook:', emailError)
           // Don't throw error here - payment was successful, email failure shouldn't break the flow

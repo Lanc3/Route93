@@ -9,6 +9,7 @@
 
 import { Router, Route, Set, PrivateSet } from '@redwoodjs/router'
 import MainLayout from 'src/layouts/MainLayout/MainLayout'
+import AdminLayout from 'src/layouts/AdminLayout/AdminLayout'
 
 import { useAuth } from './auth'
 
@@ -16,6 +17,10 @@ const Routes = () => {
   return (
     <Router useAuth={useAuth}>
       
+      
+      
+      
+     
       
       
       
@@ -28,16 +33,14 @@ const Routes = () => {
           <Route path="/user-account" page={UserAccountPage} name="userAccount" />
           <Route path="/order-confirmation/{id:Int}" page={OrderConfirmationPage} name="orderConfirmation" />
         </PrivateSet>
-        <PrivateSet unauthenticated="home" roles="ADMIN">
-        <Route path="/admin-discount-code-edit" page={AdminDiscountCodeEditPage} name="adminDiscountCodeEdit" />
-        <Route path="/admin-discount-reports" page={AdminDiscountReportsPage} name="adminDiscountReports" />
-      
-      <Route path="/admin-discount-code-add" page={AdminDiscountCodeAddPage} name="adminDiscountCodeAdd" />
-      
-      <Route path="/admin-discount-codes" page={AdminDiscountCodesPage} name="adminDiscountCodes" />
-      
+        <PrivateSet unauthenticated="home" roles="ADMIN" wrap={AdminLayout}>
+          <Route path="/admin-discount-code-edit" page={AdminDiscountCodeEditPage} name="adminDiscountCodeEdit" />
+          <Route path="/admin-discount-reports" page={AdminDiscountReportsPage} name="adminDiscountReports" />
+          <Route path="/admin-discount-code-add" page={AdminDiscountCodeAddPage} name="adminDiscountCodeAdd" />
+          <Route path="/admin-discount-codes" page={AdminDiscountCodesPage} name="adminDiscountCodes" />
           <Route path="/admin/dashboard" page={AdminDashboardPage} name="adminDashboard" />
           <Route path="/admin/analytics" page={AdminAnalyticsPage} name="adminAnalytics" />
+          <Route path="/admin/tax-management" page={AdminTaxManagementPage} name="adminTaxManagement" />
           <Route path="/admin/inventory" page={AdminInventoryPage} name="adminInventory" />
           <Route path="/admin/users/{id:Int}" page={AdminUserDetailsPage} name="adminUserDetails" />
           <Route path="/admin/users" page={AdminUsersPage} name="adminUsers" />

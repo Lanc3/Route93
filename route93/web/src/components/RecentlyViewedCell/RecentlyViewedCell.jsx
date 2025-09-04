@@ -171,7 +171,6 @@ export const Success = ({ recentlyViewed }) => {
           onClick={() => {
             if (window.confirm('Are you sure you want to clear your recently viewed history?')) {
               // This would trigger a mutation to clear recently viewed
-              console.log('Clear recently viewed')
             }
           }}
           className="text-sm text-gray-500 hover:text-gray-700 underline"

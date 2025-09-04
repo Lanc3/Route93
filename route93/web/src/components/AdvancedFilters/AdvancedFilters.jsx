@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useQuery, gql } from '@apollo/client'
 
 const CATEGORIES_QUERY = gql`
-  query CategoriesQuery {
+  query AdvancedFiltersCategoriesQuery {
     categories {
       id
       name
@@ -16,8 +16,8 @@ const CATEGORIES_QUERY = gql`
 `
 
 const COLLECTIONS_QUERY = gql`
-  query CollectionsQuery {
-    collections(where: { isActive: { equals: true } }) {
+  query AdvancedFiltersCollectionsQuery {
+    collections(isActive: true) {
       id
       name
       description
@@ -87,12 +87,12 @@ const AdvancedFilters = ({ filters, onFilterChange, onClearFilters }) => {
   const { data: collectionsData, loading: collectionsLoading } = useQuery(COLLECTIONS_QUERY)
 
   const predefinedPriceRanges = [
-    { label: 'Under $25', min: 0, max: 25 },
-    { label: '$25 - $50', min: 25, max: 50 },
-    { label: '$50 - $100', min: 50, max: 100 },
-    { label: '$100 - $200', min: 100, max: 200 },
-    { label: '$200 - $500', min: 200, max: 500 },
-    { label: 'Over $500', min: 500, max: null },
+    { label: 'Under €25', min: 0, max: 25 },
+    { label: '€25 - €50', min: 25, max: 50 },
+    { label: '€50 - €100', min: 50, max: 100 },
+    { label: '€100 - €200', min: 100, max: 200 },
+    { label: '€200 - €500', min: 200, max: 500 },
+    { label: 'Over €500', min: 500, max: null },
   ]
 
   const popularTags = [

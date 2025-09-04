@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useMutation, gql } from '@apollo/client'
 import { toast } from '@redwoodjs/web/toast'
+import { ALL_COUNTRIES } from 'src/lib/countries'
 
 const CREATE_ADDRESS_MUTATION = gql`
   mutation CreateAddressMutation($input: CreateAddressInput!) {
@@ -50,7 +51,7 @@ const AddressForm = ({ address, userId, onSave, onCancel, isEditing = false }) =
     city: '',
     state: '',
     zipCode: '',
-    country: 'US',
+    country: 'IE',
     phone: '',
     isDefault: false
   })
@@ -257,13 +258,12 @@ const AddressForm = ({ address, userId, onSave, onCancel, isEditing = false }) =
             required
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
           >
-            <option value="US">United States</option>
-            <option value="CA">Canada</option>
-            <option value="MX">Mexico</option>
-            <option value="GB">United Kingdom</option>
-            <option value="DE">Germany</option>
-            <option value="FR">France</option>
-            <option value="AU">Australia</option>
+            <option value="">Select a country</option>
+            {ALL_COUNTRIES.map((country) => (
+              <option key={country.code} value={country.code}>
+                {country.name} {country.isEU ? '(EU)' : ''}
+              </option>
+            ))}
           </select>
         </div>
 

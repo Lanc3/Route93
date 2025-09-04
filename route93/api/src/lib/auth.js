@@ -69,38 +69,27 @@ export const isAuthenticated = () => {
  * or when no roles are provided to check against. Otherwise returns false.
  */
 export const hasRole = (roles) => {
-  console.log('🔍 API hasRole called with:', roles)
-  console.log('🔍 API context.currentUser:', context?.currentUser)
-  
   if (!isAuthenticated()) {
-    console.log('❌ API: Not authenticated')
     return false
   }
 
   const currentUserRole = context?.currentUser?.role
-  console.log('🔍 API currentUserRole:', currentUserRole)
 
   if (!currentUserRole) {
-    console.log('❌ API: No role found')
     return false
   }
 
   if (typeof roles === 'string') {
     // roles to check is a string, currentUser.role is a string
-    const result = currentUserRole === roles
-    console.log(`🔍 API String comparison: "${currentUserRole}" === "${roles}" → ${result}`)
-    return result
+    return currentUserRole === roles
   }
 
   if (Array.isArray(roles)) {
     // roles to check is an array, currentUser.role is a string
-    const result = roles.includes(currentUserRole)
-    console.log(`🔍 API Array comparison: [${roles.join(', ')}] includes "${currentUserRole}" → ${result}`)
-    return result
+    return roles.includes(currentUserRole)
   }
 
   // roles not found
-  console.log('❌ API: No matching role logic')
   return false
 }
 

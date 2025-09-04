@@ -132,6 +132,48 @@ export const order = ({ id }) => {
   })
 }
 
+export const findOrderByNumberAndEmail = ({ orderNumber, email }) => {
+  return db.order.findFirst({
+    where: {
+      orderNumber: {
+        equals: orderNumber,
+        mode: 'insensitive',
+      },
+      user: {
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
+      },
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+        },
+      },
+      shippingAddress: true,
+      billingAddress: true,
+      orderItems: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              images: true,
+              price: true,
+            },
+          },
+        },
+      },
+      payments: true,
+    },
+  })
+}
+
 export const createOrder = async ({ input }) => {
   requireAuth()
   
@@ -211,6 +253,51 @@ export const updateOrder = ({ id, input }) => {
   })
 }
 
+export const updateTrackingInfo = ({ id, input }) => {
+  requireAuth({ roles: ['ADMIN'] })
+
+  // Parse trackingEvents if it's a string
+  const data = { ...input }
+  if (data.trackingEvents && typeof data.trackingEvents === 'string') {
+    try {
+      data.trackingEvents = JSON.parse(data.trackingEvents)
+    } catch (error) {
+      console.error('Invalid trackingEvents JSON:', error)
+      throw new Error('Invalid tracking events format')
+    }
+  }
+
+  return db.order.update({
+    data,
+    where: { id },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+        },
+      },
+      shippingAddress: true,
+      billingAddress: true,
+      orderItems: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              images: true,
+              price: true,
+            },
+          },
+        },
+      },
+      payments: true,
+    },
+  })
+}
+
 export const updateOrderStatus = async ({ id, status }) => {
   requireAuth({ roles: ['ADMIN'] })
   
@@ -238,10 +325,8 @@ export const updateOrderStatus = async ({ id, status }) => {
         await sendOrderConfirmationEmailById({
           orderId: id
         })
-        
-        console.log(`Order confirmation email sent for manually confirmed order ${id}`)
       } else {
-        console.log(`Order ${id} confirmed but no completed payment found - skipping email`)
+        // Order confirmed but no completed payment found - skipping email
       }
     } catch (emailError) {
       console.error('Failed to send order confirmation email for manually confirmed order:', emailError)

@@ -20,16 +20,13 @@ const formatDateForGrouping = (date, period = 'daily') => {
 export const salesReport = async ({ startDate, endDate, period = 'daily' }) => {
 
   try {
-    console.log('Starting salesReport with dates:', { startDate, endDate })
     const { startDate: start, endDate: end } = getDateRange(startDate, endDate)
-    console.log('Processed date range:', { start, end })
     
     // Get previous period for growth calculation
     const periodDiff = end.getTime() - start.getTime()
     const prevStart = new Date(start.getTime() - periodDiff)
     const prevEnd = start
 
-    console.log('Fetching current period stats...')
     // Current period stats
     const [currentStats, previousStats, recentOrdersData] = await Promise.all([
       // Current period revenue and orders
@@ -67,8 +64,6 @@ export const salesReport = async ({ startDate, endDate, period = 'daily' }) => {
       })
     ])
 
-    console.log('Current stats:', currentStats)
-    console.log('Previous stats:', previousStats)
 
     const totalRevenue = currentStats._sum.totalAmount || 0
     const totalOrders = currentStats._count || 0
@@ -80,10 +75,7 @@ export const salesReport = async ({ startDate, endDate, period = 'daily' }) => {
     const revenueGrowth = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0
     const ordersGrowth = prevOrders > 0 ? ((totalOrders - prevOrders) / prevOrders) * 100 : 0
 
-    console.log('Calculated metrics:', { totalRevenue, totalOrders, averageOrderValue, revenueGrowth, ordersGrowth })
-
     // Generate daily sales data using Prisma instead of raw SQL
-    console.log('Fetching daily sales data...')
     const dailySalesData = await db.order.groupBy({
       by: ['createdAt'],
       where: {
@@ -94,7 +86,6 @@ export const salesReport = async ({ startDate, endDate, period = 'daily' }) => {
       _count: true
     })
 
-    console.log('Daily sales data:', dailySalesData)
 
     // Generate monthly sales data
     const monthlyData = {}
@@ -114,10 +105,7 @@ export const salesReport = async ({ startDate, endDate, period = 'daily' }) => {
       customers: data.customers.size || 0
     }))
 
-    console.log('Monthly sales data:', monthlySales)
-
     // Get top categories using Prisma
-    console.log('Fetching category data...')
     const topCategoriesData = await db.orderItem.findMany({
       where: {
         order: {
@@ -134,7 +122,6 @@ export const salesReport = async ({ startDate, endDate, period = 'daily' }) => {
       }
     })
 
-    console.log('Category data count:', topCategoriesData.length)
 
     // Process category data
     const categoryStats = {}
@@ -159,7 +146,6 @@ export const salesReport = async ({ startDate, endDate, period = 'daily' }) => {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10)
 
-    console.log('Top categories:', topCategories)
 
     // Format daily sales data
     const dailySales = dailySalesData.map(day => ({
@@ -169,7 +155,6 @@ export const salesReport = async ({ startDate, endDate, period = 'daily' }) => {
       customers: 0 // We'll need a separate query for this
     }))
 
-    console.log('Final daily sales:', dailySales)
 
     const result = {
       totalRevenue,
@@ -183,7 +168,6 @@ export const salesReport = async ({ startDate, endDate, period = 'daily' }) => {
       recentOrders: recentOrdersData
     }
 
-    console.log('Sales report result:', result)
     return result
   } catch (error) {
     console.error('Error generating sales report:', error)
@@ -204,11 +188,9 @@ export const salesReport = async ({ startDate, endDate, period = 'daily' }) => {
 export const productAnalytics = async ({ startDate, endDate, limit = 10 }) => {
 
   try {
-    console.log('Starting productAnalytics with dates:', { startDate, endDate })
     const { startDate: start, endDate: end } = getDateRange(startDate, endDate)
 
     // Get top selling products using Prisma
-    console.log('Fetching top selling products...')
     const topSellingData = await db.orderItem.findMany({
       where: {
         order: {
@@ -225,7 +207,6 @@ export const productAnalytics = async ({ startDate, endDate, limit = 10 }) => {
       }
     })
 
-    console.log('Top selling data count:', topSellingData.length)
 
     // Process product data
     const productStats = {}
@@ -249,10 +230,7 @@ export const productAnalytics = async ({ startDate, endDate, limit = 10 }) => {
       .sort((a, b) => b.totalSales - a.totalSales)
       .slice(0, limit)
 
-    console.log('Top selling products:', topSellingProducts)
-
     // Get low performing products (products with no sales in the period)
-    console.log('Fetching low performing products...')
     const allProducts = await db.product.findMany({
       where: { status: 'ACTIVE' },
       include: { category: true }
@@ -270,10 +248,7 @@ export const productAnalytics = async ({ startDate, endDate, limit = 10 }) => {
       }))
       .slice(0, limit)
 
-    console.log('Low performing products count:', lowPerformingProducts.length)
-
     // Get products by category
-    console.log('Fetching products by category...')
     const productsByCategory = await db.category.findMany({
       include: {
         products: {
@@ -292,7 +267,6 @@ export const productAnalytics = async ({ startDate, endDate, limit = 10 }) => {
       totalRevenue: 0 // Would need additional query to calculate
     }))
 
-    console.log('Products by category:', categoryProducts)
 
     const result = {
       topSellingProducts,
@@ -301,7 +275,6 @@ export const productAnalytics = async ({ startDate, endDate, limit = 10 }) => {
       inventoryTurnover: [] // Would need additional query to calculate
     }
 
-    console.log('Product analytics result:', result)
     return result
   } catch (error) {
     console.error('Error generating product analytics:', error)
@@ -317,14 +290,12 @@ export const productAnalytics = async ({ startDate, endDate, limit = 10 }) => {
 export const userAnalytics = async ({ startDate, endDate }) => {
 
   try {
-    console.log('Starting userAnalytics with dates:', { startDate, endDate })
     const { startDate: start, endDate: end } = getDateRange(startDate, endDate)
     
     // Get previous period for growth calculation
     const periodDiff = end.getTime() - start.getTime()
     const prevStart = new Date(start.getTime() - periodDiff)
 
-    console.log('Fetching user statistics...')
     const [userStats, prevUserStats, topCustomersData] = await Promise.all([
       // Current user stats
       db.user.count({
@@ -348,7 +319,6 @@ export const userAnalytics = async ({ startDate, endDate }) => {
       })
     ])
 
-    console.log('User stats:', { userStats, prevUserStats, topCustomersCount: topCustomersData.length })
 
     const newUsersThisMonth = await db.user.count({
       where: {
@@ -366,10 +336,7 @@ export const userAnalytics = async ({ startDate, endDate }) => {
 
     const userGrowth = prevUserStats > 0 ? ((userStats - prevUserStats) / prevUserStats) * 100 : 0
 
-    console.log('User growth metrics:', { newUsersThisMonth, activeUsers, userGrowth })
-
     // Process top customers data
-    console.log('Processing top customers...')
     const topCustomers = await Promise.all(
       topCustomersData.slice(0, 10).map(async (customer) => {
         const user = await db.user.findUnique({
@@ -389,13 +356,11 @@ export const userAnalytics = async ({ startDate, endDate }) => {
       })
     )
 
-    console.log('Top customers:', topCustomers)
 
     // Calculate return customer rate (customers with more than 1 order)
     const returnCustomerCount = topCustomers.filter(c => c.totalOrders > 1).length
     const returnCustomerRate = topCustomers.length > 0 ? (returnCustomerCount / topCustomers.length) * 100 : 0
 
-    console.log('Return customer rate:', returnCustomerRate)
 
     const result = {
       totalUsers: userStats,
@@ -408,7 +373,6 @@ export const userAnalytics = async ({ startDate, endDate }) => {
       returnCustomerRate
     }
 
-    console.log('User analytics result:', result)
     return result
   } catch (error) {
     console.error('Error generating user analytics:', error)
@@ -428,7 +392,6 @@ export const userAnalytics = async ({ startDate, endDate }) => {
 export const overallAnalytics = async ({ startDate, endDate }) => {
 
   try {
-    console.log('Starting overallAnalytics with dates:', { startDate, endDate })
     const [salesData, productData, userData] = await Promise.all([
       salesReport({ startDate, endDate }),
       productAnalytics({ startDate, endDate }),
@@ -452,7 +415,6 @@ export const overallAnalytics = async ({ startDate, endDate }) => {
       returnCustomerRate
     }
 
-    console.log('Overall analytics result:', result)
     return result
   } catch (error) {
     console.error('Error generating overall analytics:', error)
@@ -470,7 +432,6 @@ export const overallAnalytics = async ({ startDate, endDate }) => {
 export const dashboardData = async ({ startDate, endDate, period = 'daily' }) => {
 
   try {
-    console.log('Starting dashboardData with dates:', { startDate, endDate, period })
     const [salesData, productData, userData] = await Promise.all([
       salesReport({ startDate, endDate, period }),
       productAnalytics({ startDate, endDate }),
@@ -483,7 +444,6 @@ export const dashboardData = async ({ startDate, endDate, period = 'daily' }) =>
       userData
     }
 
-    console.log('Dashboard data result:', result)
     return result
   } catch (error) {
     console.error('Error generating dashboard data:', error)

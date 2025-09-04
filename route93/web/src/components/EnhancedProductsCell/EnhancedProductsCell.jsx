@@ -92,7 +92,6 @@ const Success = ({ products, sortBy, sortOrder, limit, status }) => {
         }
       }
     } catch (error) {
-      console.warn('Failed to parse product images:', error)
       firstImage = null
     }
     
