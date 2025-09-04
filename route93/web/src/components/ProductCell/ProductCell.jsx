@@ -3,6 +3,7 @@ import { Link, routes } from '@redwoodjs/router'
 import { useCart } from 'src/contexts/CartContext'
 import { toast } from '@redwoodjs/web/toast'
 import ProductReviews from 'src/components/ProductReviews/ProductReviews'
+import { parseProductImages, parseProductTags } from 'src/lib/imageUtils'
 
 export const QUERY = gql`
   query FindProductQuery($slug: String!) {
@@ -118,14 +119,12 @@ export const Success = ({ product }) => {
   const [activeTab, setActiveTab] = useState('description')
   const [isAddingToCart, setIsAddingToCart] = useState(false)
 
-  // Parse images from JSON string
-  const images = product.images ? JSON.parse(product.images) : []
+  // Parse images and tags using utility functions
+  const images = parseProductImages(product.images)
   const productImages = images.length > 0 ? images : [
     'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&h=600&fit=crop&q=80'
   ]
-
-  // Parse tags
-  const tags = product.tags ? JSON.parse(product.tags) : []
+  const tags = parseProductTags(product.tags)
 
   // Calculate savings
   const hasDiscount = product.salePrice && product.salePrice < product.price

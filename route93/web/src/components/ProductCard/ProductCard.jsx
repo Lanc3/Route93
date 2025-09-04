@@ -1,10 +1,11 @@
 import { Link, routes } from '@redwoodjs/router'
 import { useCart } from 'src/contexts/CartContext'
 import { toast } from '@redwoodjs/web/toast'
+import { parseProductImages } from 'src/lib/imageUtils'
 
 const ProductCard = ({ product }) => {
   const { addItem } = useCart()
-  const images = product.images ? JSON.parse(product.images) : []
+  const images = parseProductImages(product.images)
   const primaryImage = images[0] || 'https://via.placeholder.com/400x400?text=No+Image'
   
   const displayPrice = product.salePrice || product.price
