@@ -1,11 +1,13 @@
 import { Link, routes } from '@redwoodjs/router'
 import { useState } from 'react'
 import { useCart } from 'src/contexts/CartContext'
+import QuickViewModal from 'src/components/QuickViewModal/QuickViewModal'
 
 const EnhancedProductCard = ({ product, index }) => {
   const [isHovered, setIsHovered] = useState(false)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
   const { addItem } = useCart()
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false)
   
   // Calculate average rating and review count
   const averageRating = product.averageRating || 0
@@ -81,7 +83,7 @@ const EnhancedProductCard = ({ product, index }) => {
         
         {/* Quick View Overlay */}
         <div className="quick-view-overlay">
-          <button className="quick-view-button">
+          <button className="quick-view-button" onClick={() => setIsQuickViewOpen(true)}>
             Quick View
           </button>
         </div>
@@ -162,6 +164,11 @@ const EnhancedProductCard = ({ product, index }) => {
 
       {/* Hover Glow Effect */}
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-400/20 to-green-400/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
+      <QuickViewModal
+        product={product}
+        isOpen={isQuickViewOpen}
+        onClose={() => setIsQuickViewOpen(false)}
+      />
     </div>
   )
 }

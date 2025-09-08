@@ -357,7 +357,7 @@ const AdminDiscountCodeEditPage = () => {
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {[
-                      { value: 'fixed', label: 'Fixed Amount', desc: '$10 off' },
+                      { value: 'fixed', label: 'Fixed Amount', desc: '€10 off' },
                       { value: 'percentage', label: 'Percentage', desc: '20% off' },
                       { value: 'free_shipping', label: 'Free Shipping', desc: 'No shipping cost' },
                       { value: 'bogo', label: 'Buy One Get One', desc: 'BOGO deals' }
@@ -401,7 +401,7 @@ const AdminDiscountCodeEditPage = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Minimum Order Value ($)
+                        Minimum Order Value (€)
                       </label>
                       <input
                         type="number"
@@ -421,7 +421,7 @@ const AdminDiscountCodeEditPage = () => {
                     {formData.type === 'percentage' && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Maximum Discount ($)
+                          Maximum Discount (€)
                         </label>
                         <input
                           type="number"

@@ -335,7 +335,7 @@
 
 /* Product Image Container */
 .product-image-container {
-  @apply relative overflow-hidden aspect-square;
+  @apply relative overflow-hidden aspect-square z-30;
   transform: translateZ(20px);
 }
 
@@ -363,7 +363,7 @@
 
 /* Quick View Overlay */
 .quick-view-overlay {
-  @apply absolute inset-0 bg-black/60 opacity-0 transition-all duration-300 flex items-center justify-center;
+  @apply absolute inset-0 bg-black/60 opacity-0 transition-all duration-300 flex items-center justify-center z-50 pointer-events-auto;
   transform: translateZ(40px);
 }
 
@@ -372,7 +372,7 @@
 }
 
 .quick-view-button {
-  @apply bg-white text-purple-600 px-6 py-3 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 hover:bg-purple-600 hover:text-white;
+  @apply bg-white text-purple-600 px-6 py-3 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 hover:bg-purple-600 hover:text-white z-50 relative;
 }
 
 /* Rating Stars */
@@ -464,7 +464,7 @@
 }
 
 .parallax-content {
-  @apply relative z-10 w-full px-32 sm:px-48 lg:px-64;
+  @apply relative z-10 w-full px-4 sm:px-4 lg:px-4;
 }
 
 /* Skeleton Loading */

@@ -200,26 +200,21 @@ const AboutPage = () => {
               </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
               {[
                 {
-                  name: 'Sarah Johnson',
+                  name: 'Paul',
                   role: 'Founder & CEO',
                   image: 'https://images.unsplash.com/photo-1494790108755-2616c4e6c3a6?w=300&h=300&fit=crop&q=80',
                   bio: 'Visionary leader with 15+ years in e-commerce, passionate about customer experience and innovation.'
                 },
                 {
-                  name: 'Michael Chen',
+                  name: 'Aaron',
                   role: 'CTO',
                   image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&q=80',
                   bio: 'Technology expert focused on building scalable, secure platforms that enhance user experience.'
                 },
-                {
-                  name: 'Emily Rodriguez',
-                  role: 'Head of Customer Success',
-                  image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop&q=80',
-                  bio: 'Customer advocate ensuring every interaction exceeds expectations and builds lasting relationships.'
-                }
+
               ].map((member, index) => (
                 <div key={index} className="text-center">
                   <div className="relative mb-4">

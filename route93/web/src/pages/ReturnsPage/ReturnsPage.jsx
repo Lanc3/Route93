@@ -325,7 +325,7 @@ const ReturnsPage = () => {
                 },
                 {
                   question: "Do I have to pay for return shipping?",
-                  answer: "Return shipping is free for defective items. For other returns, you can use our prepaid return label for $6.99, or arrange your own shipping."
+                  answer: "Return shipping is free for defective items. For other returns, you can use our prepaid return label for €6.99, or arrange your own shipping."
                 },
                 {
                   question: "How long does it take to get my refund?",

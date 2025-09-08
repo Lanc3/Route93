@@ -110,7 +110,7 @@ const ContactPage = () => {
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Email</h3>
                 <p className="text-gray-600 mb-4">We'll respond within 24 hours</p>
                 <a href="mailto:hello@route93.com" className="text-purple-600 font-semibold hover:text-purple-700">
-                  hello@route93.com
+                  help@route93.ie
                 </a>
                 <p className="text-sm text-gray-500 mt-2">Available 24/7</p>
               </div>

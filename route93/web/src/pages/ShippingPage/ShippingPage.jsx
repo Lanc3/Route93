@@ -6,7 +6,7 @@ const ShippingPage = () => {
     <>
       <Metadata 
         title="Shipping Information - Delivery Options & Rates | Route93" 
-        description="Learn about Route93's shipping options, delivery times, and rates. Free shipping on orders over $50. Fast, reliable delivery worldwide."
+        description="Learn about Route93's shipping options, delivery times, and rates. Free shipping on orders over €50. Fast, reliable delivery worldwide."
       />
 
       <div className="bg-gray-50 min-h-screen">
@@ -52,7 +52,7 @@ const ShippingPage = () => {
                 <svg className="w-12 h-12 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
-                <h2 className="text-3xl font-bold">Free Shipping on Orders Over $50!</h2>
+                <h2 className="text-3xl font-bold">Free Shipping on Orders Over €50!</h2>
               </div>
               <p className="text-xl text-green-100">
                 Enjoy complimentary standard shipping to the continental United States on qualifying orders.
@@ -82,10 +82,10 @@ const ShippingPage = () => {
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Standard Shipping</h3>
                   <div className="text-3xl font-bold text-purple-600 mb-2">FREE</div>
-                  <p className="text-sm text-gray-500 mb-4">on orders over $50</p>
+                  <p className="text-sm text-gray-500 mb-4">on orders over €50</p>
                   <div className="space-y-2 text-gray-600">
                     <p><strong>Delivery:</strong> 3-7 business days</p>
-                    <p><strong>Cost:</strong> $5.99 (under $50)</p>
+                    <p><strong>Cost:</strong> €5.99 (under €50)</p>
                     <p><strong>Tracking:</strong> Included</p>
                   </div>
                 </div>
@@ -105,11 +105,11 @@ const ShippingPage = () => {
                     </svg>
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Expedited Shipping</h3>
-                  <div className="text-3xl font-bold text-green-600 mb-2">$12.99</div>
+                  <div className="text-3xl font-bold text-green-600 mb-2">€12.99</div>
                   <p className="text-sm text-gray-500 mb-4">all orders</p>
                   <div className="space-y-2 text-gray-600">
                     <p><strong>Delivery:</strong> 1-3 business days</p>
-                    <p><strong>Cost:</strong> $12.99</p>
+                    <p><strong>Cost:</strong> €12.99</p>
                     <p><strong>Tracking:</strong> Real-time updates</p>
                   </div>
                 </div>
@@ -124,11 +124,11 @@ const ShippingPage = () => {
                     </svg>
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Overnight Shipping</h3>
-                  <div className="text-3xl font-bold text-purple-600 mb-2">$24.99</div>
+                  <div className="text-3xl font-bold text-purple-600 mb-2">€24.99</div>
                   <p className="text-sm text-gray-500 mb-4">all orders</p>
                   <div className="space-y-2 text-gray-600">
                     <p><strong>Delivery:</strong> Next business day</p>
-                    <p><strong>Cost:</strong> $24.99</p>
+                    <p><strong>Cost:</strong> €24.99</p>
                     <p><strong>Tracking:</strong> Priority handling</p>
                   </div>
                 </div>
@@ -149,10 +149,10 @@ const ShippingPage = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { region: 'Canada', time: '5-10 days', cost: 'From $15.99' },
-                { region: 'Europe', time: '7-14 days', cost: 'From $24.99' },
-                { region: 'Asia Pacific', time: '10-21 days', cost: 'From $29.99' },
-                { region: 'Rest of World', time: '14-28 days', cost: 'From $34.99' }
+                { region: 'Canada', time: '5-10 days', cost: 'From €15.99' },
+                { region: 'Europe', time: '7-14 days', cost: 'From €24.99' },
+                { region: 'Asia Pacific', time: '10-21 days', cost: 'From €29.99' },
+                { region: 'Rest of World', time: '14-28 days', cost: 'From €34.99' }
               ].map((region, index) => (
                 <div key={index} className="bg-gray-50 p-6 rounded-lg text-center">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">{region.region}</h3>
@@ -209,14 +209,14 @@ const ShippingPage = () => {
                   <p>• Eco-friendly packaging materials when possible</p>
                   <p>• Fragile items receive extra protection</p>
                   <p>• Discreet packaging available upon request</p>
-                  <p>• Gift wrapping and messages available for $4.99</p>
+                  <p>• Gift wrapping and messages available for €4.99</p>
                 </div>
               </div>
               
               <div className="bg-white p-8 rounded-lg shadow-md">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Delivery Information</h3>
                 <div className="space-y-4 text-gray-600">
-                  <p>• Signature required for orders over $200</p>
+                  <p>• Signature required for orders over €200</p>
                   <p>• We deliver to residential and business addresses</p>
                   <p>• PO Boxes accepted for standard shipping only</p>
                   <p>• Address changes must be made within 1 hour of ordering</p>
