@@ -15,6 +15,9 @@ export const QUERY = gql`
         quantity
         price
         totalPrice
+        designUrl
+        designId
+        printFee
         product {
           id
           name
@@ -153,6 +156,43 @@ export const Success = ({ order }) => {
                   <h3 className="text-lg font-medium text-gray-900">
                     {item.product?.name || 'Product Name Unavailable'}
                   </h3>
+
+                  {/* Custom Print Details */}
+                  {item.designUrl && (
+                    <div className="mt-2 p-2 bg-purple-50 rounded-lg border border-purple-200">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0">
+                          <div className="relative">
+                            {/* Printable Item Image (bottom layer) */}
+                            <img
+                              src={item.printableItem?.imageUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNiAxNEgxOFYyNEgxNlYxNFoiIGZpbGw9IiM5Q0E4QjQiLz4KPHBhdGggZD0iTTE0IDE2SDE4VjIwSDE0VjE2WiIgZmlsbD0iIzlDQTlBQSIvPgo8L3N2Zz4='}
+                              alt="Printable Item"
+                              className="w-8 h-8 object-cover rounded border border-white"
+                              onError={(e) => {
+                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNiAxNEgxOFYyNEgxNlYxNFoiIGZpbGw9IiM5Q0E4QjQiLz4KPHBhdGggZD0iTTE0IDE2SDE4VjIwSDE0VjE2WiIgZmlsbD0iIzlDQTlBQSIvPgo8L3N2Zz4='
+                              }}
+                            />
+                            {/* Design Image (top layer, overlaid) */}
+                            <img
+                              src={item.designUrl}
+                              alt="Custom Design"
+                              className="w-4 h-4 object-cover rounded absolute -bottom-0.5 -right-0.5 border border-white"
+                              onError={(e) => {
+                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik04IDdINlYxNEg4VjdaIiBmaWxsPSIjOUNBNEFGIi8+CjxwYXRoIGQ9Ik02IDhINlYxMEg2VjhaIiBmaWxsPSIjOUNBNEFGIi8+Cjwvc3ZnPg=='
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-purple-800">Custom Print</p>
+                          {item.printFee && (
+                            <p className="text-xs text-purple-600">Print Fee: {formatCurrency(item.printFee)}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <p className="text-sm text-gray-500">
                     Quantity: {item.quantity} × {formatCurrency(item.price)}
                   </p>

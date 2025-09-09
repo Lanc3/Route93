@@ -121,8 +121,10 @@ export const calculateCartVat = (items, customerCountry = 'IE', customerVatNumbe
   }
   
   items.forEach(item => {
-    const price = item.product.salePrice || item.product.price
-    const itemTotal = price * item.quantity
+    const basePrice = (item.printableItem && typeof item.printableItem.price === 'number')
+      ? item.printableItem.price
+      : (item.product.salePrice || item.product.price)
+    const itemTotal = (basePrice + (item.printFee || 0)) * item.quantity
     const vatRate = getVatRateForProduct(item.product)
     
     const vatCalc = calculateVat(itemTotal, vatRate, customerType)

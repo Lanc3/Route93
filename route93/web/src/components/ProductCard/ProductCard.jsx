@@ -14,7 +14,7 @@ const ProductCard = ({ product }) => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow group">
       <div className="relative">
-        <Link to={routes.product({ slug: product.slug })}>
+        <Link to={product.slug ? routes.product({ slug: product.slug }) : '#'}>
           <img
             src={primaryImage}
             alt={product.name}
@@ -60,7 +60,7 @@ const ProductCard = ({ product }) => {
           )}
         </div>
         
-        <Link to={routes.product({ slug: product.slug })}>
+        <Link to={product.slug ? routes.product({ slug: product.slug }) : '#'}>
           <h3 className="font-semibold text-gray-900 mb-2 hover:text-purple-600 transition-colors">
             {product.name}
           </h3>

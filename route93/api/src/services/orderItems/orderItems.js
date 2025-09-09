@@ -36,4 +36,7 @@ export const OrderItem = {
   product: (_obj, { root }) => {
     return db.orderItem.findUnique({ where: { id: root?.id } }).product()
   },
+  printableItem: (_obj, { root }) => {
+    return db.orderItem.findUnique({ where: { id: root?.id } }).printableItem()
+  },
 }

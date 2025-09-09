@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useEffect } from 'react'
 import { useAuth } from 'src/auth'
-import { useMutation } from '@redwoodjs/web'
+import { useMutation, useQuery } from '@redwoodjs/web'
 import { toast } from '@redwoodjs/web/toast'
 import { formatPrice } from 'src/lib/currency'
 
@@ -22,6 +22,10 @@ const ADD_TO_CART_MUTATION = gql`
     createCartItem(input: $input) {
       id
       quantity
+      designUrl
+      designId
+      printFee
+      printableItemId
       product {
         id
         name
@@ -30,6 +34,11 @@ const ADD_TO_CART_MUTATION = gql`
         salePrice
         images
         inventory
+      }
+      printableItem {
+        id
+        name
+        imageUrl
       }
     }
   }
@@ -40,6 +49,10 @@ const UPDATE_CART_ITEM_MUTATION = gql`
     updateCartItem(id: $id, input: $input) {
       id
       quantity
+      designUrl
+      designId
+      printFee
+      printableItemId
       product {
         id
         name
@@ -48,6 +61,11 @@ const UPDATE_CART_ITEM_MUTATION = gql`
         salePrice
         images
         inventory
+      }
+      printableItem {
+        id
+        name
+        imageUrl
       }
     }
   }
@@ -66,6 +84,10 @@ const SYNC_CART_MUTATION = gql`
     syncCart(items: $items) {
       id
       quantity
+      designUrl
+      designId
+      printFee
+      printableItemId
       product {
         id
         name
@@ -75,6 +97,48 @@ const SYNC_CART_MUTATION = gql`
         images
         inventory
       }
+      printableItem {
+        id
+        name
+        imageUrl
+      }
+    }
+  }
+`
+
+const LOAD_USER_CART_QUERY = gql`
+  query LoadUserCartQuery($userId: Int!) {
+    userCartItems(userId: $userId) {
+      id
+      quantity
+      designUrl
+      designId
+      printFee
+      printableItemId
+      product {
+        id
+        name
+        slug
+        price
+        salePrice
+        images
+        inventory
+      }
+      printableItem {
+        id
+        name
+        imageUrl
+      }
+    }
+  }
+`
+
+const LOAD_PRINTABLE_ITEMS_QUERY = gql`
+  query LoadPrintableItemsQuery {
+    printableItems(status: "ACTIVE") {
+      id
+      name
+      imageUrl
     }
   }
 `
@@ -90,23 +154,21 @@ const cartReducer = (state, action) => {
       }
     
     case CART_ACTIONS.ADD_ITEM: {
-      const existingItem = state.items.find(item => item.product.id === action.payload.product.id)
-      
-      if (existingItem) {
-        return {
-          ...state,
-          items: state.items.map(item =>
-            item.product.id === action.payload.product.id
-              ? { ...item, quantity: item.quantity + action.payload.quantity }
-              : item
-          )
+      // Use a composite key so custom prints (product + printableItem/design) don't merge incorrectly
+      const makeKey = (ci) => `${ci.product?.id || ci.productId}|${ci.printableItemId || 0}|${ci.designId || ''}`
+      const newKey = makeKey(action.payload)
+      const existingIndex = state.items.findIndex((it) => makeKey(it) === newKey)
+
+      if (existingIndex >= 0) {
+        const updated = [...state.items]
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: (updated[existingIndex].quantity || 0) + (action.payload.quantity || 0)
         }
-      } else {
-        return {
-          ...state,
-          items: [...state.items, action.payload]
-        }
+        return { ...state, items: updated }
       }
+
+      return { ...state, items: [...state.items, action.payload] }
     }
     
     case CART_ACTIONS.REMOVE_ITEM:
@@ -153,11 +215,20 @@ export const CartProvider = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState)
   const { currentUser, isAuthenticated } = useAuth()
 
-  // GraphQL mutations
+  // GraphQL mutations and queries
   const [addToCartDB] = useMutation(ADD_TO_CART_MUTATION)
   const [updateCartItemDB] = useMutation(UPDATE_CART_ITEM_MUTATION)
   const [deleteCartItemDB] = useMutation(DELETE_CART_ITEM_MUTATION)
   const [syncCartDB] = useMutation(SYNC_CART_MUTATION)
+
+  // Query to load existing cart items
+  const { data: userCartData, loading: cartLoading } = useQuery(LOAD_USER_CART_QUERY, {
+    variables: { userId: currentUser?.id },
+    skip: !isAuthenticated || !currentUser,
+  })
+
+  // Query to load printable items for populating cart items
+  const { data: printableItemsData } = useQuery(LOAD_PRINTABLE_ITEMS_QUERY)
 
   // Local storage key
   const CART_STORAGE_KEY = 'route93_cart'
@@ -166,6 +237,37 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     loadCart()
   }, [isAuthenticated, currentUser])
+
+  // Handle cart data from database query
+  useEffect(() => {
+    if (userCartData?.userCartItems && !cartLoading) {
+      dispatch({ type: CART_ACTIONS.LOAD_CART, payload: userCartData.userCartItems })
+    }
+  }, [userCartData, cartLoading])
+
+  // Re-populate printable item data when it becomes available
+  useEffect(() => {
+    if (printableItemsData?.printableItems && state.items.length > 0) {
+      const needsUpdate = state.items.some(item =>
+        item.printableItemId && !item.printableItem
+      )
+
+      if (needsUpdate) {
+        const updatedItems = state.items.map(item => {
+          if (item.printableItemId && !item.printableItem) {
+            const printableItem = printableItemsData.printableItems.find(
+              pi => pi.id === item.printableItemId
+            )
+            if (printableItem) {
+              return { ...item, printableItem }
+            }
+          }
+          return item
+        })
+        dispatch({ type: CART_ACTIONS.LOAD_CART, payload: updatedItems })
+      }
+    }
+  }, [printableItemsData, state.items])
 
   const loadCart = async () => {
     dispatch({ type: CART_ACTIONS.SET_LOADING, payload: true })
@@ -178,7 +280,11 @@ export const CartProvider = ({ children }) => {
         if (localCart.length > 0) {
           const syncInput = localCart.map(item => ({
             productId: item.product.id,
-            quantity: item.quantity
+            quantity: item.quantity,
+            designUrl: item.designUrl,
+            designId: item.designId,
+            printFee: item.printFee,
+            printableItemId: item.printableItemId
           }))
           
           const { data } = await syncCartDB({ variables: { items: syncInput } })
@@ -188,8 +294,11 @@ export const CartProvider = ({ children }) => {
           localStorage.removeItem(CART_STORAGE_KEY)
         } else {
           // Load existing cart from database
-          // This would require a separate query to fetch user's cart items
-          dispatch({ type: CART_ACTIONS.LOAD_CART, payload: [] })
+          if (userCartData?.userCartItems) {
+            dispatch({ type: CART_ACTIONS.LOAD_CART, payload: userCartData.userCartItems })
+          } else {
+            dispatch({ type: CART_ACTIONS.LOAD_CART, payload: [] })
+          }
         }
       } catch (error) {
         console.error('Error loading cart from database:', error)
@@ -204,7 +313,21 @@ export const CartProvider = ({ children }) => {
   const loadLocalCart = () => {
     try {
       const localCart = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || '[]')
-      dispatch({ type: CART_ACTIONS.LOAD_CART, payload: localCart })
+
+      // Populate printable item data for cart items that have printableItemId but no printableItem
+      const populatedCart = localCart.map(item => {
+        if (item.printableItemId && !item.printableItem && printableItemsData?.printableItems) {
+          const printableItem = printableItemsData.printableItems.find(
+            pi => pi.id === item.printableItemId
+          )
+          if (printableItem) {
+            return { ...item, printableItem }
+          }
+        }
+        return item
+      })
+
+      dispatch({ type: CART_ACTIONS.LOAD_CART, payload: populatedCart })
     } catch (error) {
       console.error('Error loading cart from localStorage:', error)
       dispatch({ type: CART_ACTIONS.LOAD_CART, payload: [] })
@@ -220,17 +343,44 @@ export const CartProvider = ({ children }) => {
   }
 
   // Add item to cart
-  const addItem = async (product, quantity = 1) => {
+  const addItem = async (product, quantity = 1, designInfo = null) => {
     if (quantity <= 0) return
     if (product.inventory < quantity) {
       toast.error('Not enough inventory available')
       return
     }
 
+    // Populate printable item data if available
+    let printableItem = null
+    console.log('=== CART ADD ITEM DEBUG ===')
+    console.log('Product:', product)
+    console.log('Design Info:', designInfo)
+    console.log('Printable Items Data:', printableItemsData)
+    console.log('Printable Items Array:', printableItemsData?.printableItems)
+
+    if (designInfo?.printableItemId && printableItemsData?.printableItems) {
+      printableItem = printableItemsData.printableItems.find(
+        pi => pi.id === designInfo.printableItemId
+      )
+      console.log('Found printable item:', printableItem)
+      console.log('Searching for ID:', designInfo.printableItemId)
+      console.log('Available IDs:', printableItemsData.printableItems.map(pi => pi.id))
+    } else {
+      console.log('Cannot populate printable item - missing data or ID')
+      console.log('Has printableItemId:', !!designInfo?.printableItemId)
+      console.log('Has printableItemsData:', !!printableItemsData)
+      console.log('Has printableItems array:', !!printableItemsData?.printableItems)
+    }
+
     const cartItem = {
       id: `temp-${Date.now()}`, // Temporary ID for local state
       product,
-      quantity
+      quantity,
+      designUrl: designInfo?.designUrl,
+      designId: designInfo?.designId,
+      printFee: designInfo?.printFee,
+      printableItemId: designInfo?.printableItemId,
+      printableItem
     }
 
     // Update local state immediately
@@ -244,13 +394,18 @@ export const CartProvider = ({ children }) => {
             input: {
               userId: currentUser.id,
               productId: product.id,
-              quantity
+              quantity,
+              designUrl: designInfo?.designUrl,
+              designId: designInfo?.designId,
+              printFee: designInfo?.printFee,
+              printableItemId: designInfo?.printableItemId
             }
           }
         })
         
         // Update with real ID from database
-        dispatch({ type: CART_ACTIONS.UPDATE_QUANTITY, payload: { id: cartItem.id, quantity: 0 } })
+        // Replace temp item with DB item
+        dispatch({ type: CART_ACTIONS.REMOVE_ITEM, payload: { id: cartItem.id } })
         dispatch({ type: CART_ACTIONS.ADD_ITEM, payload: data.createCartItem })
         
         toast.success(`${product.name} added to cart`)
@@ -323,8 +478,14 @@ export const CartProvider = ({ children }) => {
     // Update local state immediately
     dispatch({ type: CART_ACTIONS.UPDATE_QUANTITY, payload: { id: itemId, quantity } })
 
-    if (isAuthenticated && currentUser && typeof itemId === 'number') {
-      // Update in database
+    if (isAuthenticated && currentUser && typeof itemId === 'number' && itemId > 0) {
+      // Only update database items with real numeric IDs (> 0)
+      console.log('=== CART CONTEXT UPDATE DEBUG ===')
+      console.log('Attempting to update cart item:', itemId)
+      console.log('New quantity:', quantity)
+      console.log('Item type check:', typeof itemId === 'number')
+      console.log('Item ID > 0 check:', itemId > 0)
+
       try {
         await updateCartItemDB({
           variables: {
@@ -332,8 +493,16 @@ export const CartProvider = ({ children }) => {
             input: { quantity }
           }
         })
+        console.log('Successfully updated cart item in database:', itemId)
       } catch (error) {
         console.error('Error updating item quantity:', error)
+        console.error('Error details:', error)
+        console.error('This might be a temporary ID that doesn\'t exist in database')
+
+        // If the item doesn't exist in database, it might be a sync issue
+        console.log('Cart item not found in database - this could be a sync issue')
+        console.log('Consider refreshing the page or clearing browser cache')
+
         toast.error('Failed to update item quantity')
         // Revert local state change
         dispatch({ type: CART_ACTIONS.UPDATE_QUANTITY, payload: { id: itemId, quantity: oldQuantity } })
@@ -361,8 +530,11 @@ export const CartProvider = ({ children }) => {
   // Calculate cart totals
   const getCartTotal = () => {
     return state.items.reduce((total, item) => {
-      const price = item.product.salePrice || item.product.price
-      return total + (price * item.quantity)
+      const basePrice = (item.printableItem && typeof item.printableItem.price === 'number')
+        ? item.printableItem.price
+        : (item.product.salePrice || item.product.price)
+      const printFee = item.printFee || 0
+      return total + ((basePrice + printFee) * item.quantity)
     }, 0)
   }
 

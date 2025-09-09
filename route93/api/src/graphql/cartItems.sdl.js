@@ -6,13 +6,22 @@ export const schema = gql`
     updatedAt: DateTime!
     userId: Int!
     productId: Int!
+    designUrl: String
+    designId: String
+    printFee: Float
+    printableItemId: Int
     user: User!
     product: Product!
+    printableItem: PrintableItem
   }
 
   input CartSyncInput {
     productId: Int!
     quantity: Int!
+    designUrl: String
+    designId: String
+    printFee: Float
+    printableItemId: Int
   }
 
   type Query {
@@ -25,12 +34,20 @@ export const schema = gql`
     quantity: Int!
     userId: Int!
     productId: Int!
+    designUrl: String
+    designId: String
+    printFee: Float
+    printableItemId: Int
   }
 
   input UpdateCartItemInput {
     quantity: Int
     userId: Int
     productId: Int
+    designUrl: String
+    designId: String
+    printFee: Float
+    printableItemId: Int
   }
 
   type Mutation {

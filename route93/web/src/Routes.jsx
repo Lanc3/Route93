@@ -16,14 +16,6 @@ import { useAuth } from './auth'
 const Routes = () => {
   return (
     <Router useAuth={useAuth}>
-      
-      
-      
-      
-     
-      
-      
-      
       <Set wrap={MainLayout}>
           <Route path="/payment-failed" page={PaymentFailedPage} name="paymentFailed" />
           <Route path="/forgot-password" page={ForgotPasswordPage} name="forgotPassword" />
@@ -34,6 +26,7 @@ const Routes = () => {
           <Route path="/order-confirmation/{id:Int}" page={OrderConfirmationPage} name="orderConfirmation" />
         </PrivateSet>
         <PrivateSet unauthenticated="home" roles="ADMIN" wrap={AdminLayout}>
+          <Route path="/admin/orders/{id:Int}" page={AdminOrderDetailsPage} name="adminOrderDetails" />
           <Route path="/admin-discount-code-edit" page={AdminDiscountCodeEditPage} name="adminDiscountCodeEdit" />
           <Route path="/admin-discount-reports" page={AdminDiscountReportsPage} name="adminDiscountReports" />
           <Route path="/admin-discount-code-add" page={AdminDiscountCodeAddPage} name="adminDiscountCodeAdd" />
@@ -54,6 +47,12 @@ const Routes = () => {
           <Route path="/admin/products/add" page={AdminProductAddPage} name="adminProductAdd" />
           <Route path="/admin/categories" page={AdminCategoriesPage} name="adminCategories" />
           <Route path="/admin/products" page={AdminProductsPage} name="adminProducts" />
+          <Route path="/admin/printable-items/{id:Int}/edit" page={AdminPrintableItemEditPage} name="adminPrintableItemEdit" />
+          <Route path="/admin/printable-items/add" page={AdminPrintableItemAddPage} name="adminPrintableItemAdd" />
+          <Route path="/admin/printable-items" page={AdminPrintableItemsPage} name="adminPrintableItems" />
+          <Route path="/admin/designs/{id:Int}/edit" page={AdminDesignEditPage} name="adminDesignEdit" />
+          <Route path="/admin/designs/add" page={AdminDesignAddPage} name="adminDesignAdd" />
+          <Route path="/admin/designs" page={AdminDesignsPage} name="adminDesigns" />
           <Route path="/admin" page={AdminPage} name="admin" />
         </PrivateSet>
         <Route path="/terms-of-service" page={TermsOfServicePage} name="termsOfService" />
@@ -73,6 +72,7 @@ const Routes = () => {
         <Route path="/product/{slug:String}" page={ProductPage} name="product" />
         <Route path="/products" page={ProductsPage} name="products" />
         <Route path="/cart" page={CartPage} name="cart" />
+        <Route path="/custom-prints" page={CustomPrintsPage} name="customPrints" />
         <Route path="/" page={HomePage} name="home" />
         <Route notfound page={NotFoundPage} />
       </Set>

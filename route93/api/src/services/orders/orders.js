@@ -70,6 +70,14 @@ export const orders = async ({
               images: true,
             },
           },
+          printableItem: {
+            select: {
+              id: true,
+              name: true,
+              imageUrl: true,
+              price: true,
+            },
+          },
         },
       },
       payments: true,
@@ -101,8 +109,10 @@ export const ordersCount = async ({ status, userId, search }) => {
   return db.order.count({ where })
 }
 
-export const order = ({ id }) => {
-  return db.order.findUnique({
+export const order = async ({ id }) => {
+  const { currentUser } = context
+
+  const result = await db.order.findUnique({
     where: { id },
     include: {
       user: {
@@ -125,11 +135,31 @@ export const order = ({ id }) => {
               price: true,
             },
           },
+          printableItem: {
+            select: {
+              id: true,
+              name: true,
+              imageUrl: true,
+              price: true,
+            },
+          },
         },
       },
       payments: true,
     },
   })
+
+  // Authorization check: user must own the order or be an admin
+  if (currentUser) {
+    if (currentUser.roles?.includes('ADMIN') || result?.userId === currentUser.id) {
+      return result
+    } else {
+      throw new Error('You do not have permission to view this order')
+    }
+  } else {
+    // Public access allowed for confirmation
+    return result
+  }
 }
 
 export const findOrderByNumberAndEmail = ({ orderNumber, email }) => {
@@ -167,6 +197,14 @@ export const findOrderByNumberAndEmail = ({ orderNumber, email }) => {
               price: true,
             },
           },
+          printableItem: {
+            select: {
+              id: true,
+              name: true,
+              imageUrl: true,
+              price: true,
+            },
+          },
         },
       },
       payments: true,
@@ -176,13 +214,13 @@ export const findOrderByNumberAndEmail = ({ orderNumber, email }) => {
 
 export const createOrder = async ({ input }) => {
   requireAuth()
-  
+
   try {
-    const { 
-      shippingAddress, 
-      billingAddress, 
-      orderItems, 
-      ...orderData 
+    const {
+      shippingAddress,
+      billingAddress,
+      orderItems,
+      ...orderData
     } = input
 
     // Generate order number if not provided
@@ -206,18 +244,20 @@ export const createOrder = async ({ input }) => {
     })
 
     // Create the order with address IDs
+    const finalOrderData = {
+      ...orderData,
+      orderNumber,
+      shippingCost: orderData.shippingCost || 0,
+      taxAmount: orderData.taxAmount || 0,
+      shippingAddressId: createdShippingAddress.id,
+      billingAddressId: createdBillingAddress.id,
+      orderItems: {
+        create: orderItems
+      }
+    }
+
     const order = await db.order.create({
-      data: {
-        ...orderData,
-        orderNumber,
-        shippingCost: orderData.shippingCost || 0,
-        taxAmount: orderData.taxAmount || 0,
-        shippingAddressId: createdShippingAddress.id,
-        billingAddressId: createdBillingAddress.id,
-        orderItems: {
-          create: orderItems
-        }
-      },
+      data: finalOrderData,
       include: {
         user: {
           select: {
@@ -231,8 +271,22 @@ export const createOrder = async ({ input }) => {
         billingAddress: true,
         orderItems: {
           include: {
-            product: true
-          }
+            product: {
+              select: {
+                id: true,
+                name: true,
+                images: true,
+                price: true,
+              },
+            },
+            printableItem: {
+              select: {
+                id: true,
+                name: true,
+                imageUrl: true,
+              },
+            },
+          },
         },
         payments: true
       }
@@ -291,6 +345,13 @@ export const updateTrackingInfo = ({ id, input }) => {
               price: true,
             },
           },
+          printableItem: {
+            select: {
+              id: true,
+              name: true,
+              imageUrl: true,
+            },
+          },
         },
       },
       payments: true,
@@ -312,7 +373,6 @@ export const updateOrderStatus = async ({ id, status }) => {
   // If order is being confirmed and has a completed payment, send confirmation email
   if (status === 'CONFIRMED') {
     try {
-      // Check if order has a completed payment
       const payment = await db.payment.findFirst({
         where: { 
           orderId: id,
@@ -321,16 +381,12 @@ export const updateOrderStatus = async ({ id, status }) => {
       })
       
       if (payment) {
-        // Send order confirmation email
         await sendOrderConfirmationEmailById({
           orderId: id
         })
-      } else {
-        // Order confirmed but no completed payment found - skipping email
       }
     } catch (emailError) {
       console.error('Failed to send order confirmation email for manually confirmed order:', emailError)
-      // Don't throw error here - order status was updated successfully, email failure shouldn't break the flow
     }
   }
   
@@ -355,7 +411,25 @@ export const Order = {
     return db.order.findUnique({ where: { id: root?.id } }).billingAddress()
   },
   orderItems: (_obj, { root }) => {
-    return db.order.findUnique({ where: { id: root?.id } }).orderItems()
+    return db.order.findUnique({ where: { id: root?.id } }).orderItems({
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            images: true,
+            price: true,
+          },
+        },
+        printableItem: {
+          select: {
+            id: true,
+            name: true,
+            imageUrl: true,
+          },
+        },
+      },
+    })
   },
   payments: (_obj, { root }) => {
     return db.order.findUnique({ where: { id: root?.id } }).payments()

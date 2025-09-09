@@ -145,14 +145,20 @@ const MainLayout = ({ children }) => {
               >
                 Products
               </Link>
-              <Link 
-                to={routes.collections()} 
+              <Link
+                to={routes.collections()}
                 className="text-gray-600 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors"
               >
                 Collections
               </Link>
-              <Link 
-                to={routes.about()} 
+              <Link
+                to={routes.customPrints()}
+                className="text-gray-600 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors"
+              >
+                Custom Prints
+              </Link>
+              <Link
+                to={routes.about()}
                 className="text-gray-600 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors"
               >
                 About
@@ -223,15 +229,22 @@ const MainLayout = ({ children }) => {
                   >
                     Products
                   </Link>
-                  <Link 
-                    to={routes.collections()} 
+                  <Link
+                    to={routes.collections()}
                     onClick={closeMobileMenu}
                     className="block text-gray-600 hover:text-purple-600 py-2 text-base font-medium transition-colors"
                   >
                     Collections
                   </Link>
-                  <Link 
-                    to={routes.about()} 
+                  <Link
+                    to={routes.customPrints()}
+                    onClick={closeMobileMenu}
+                    className="block text-gray-600 hover:text-purple-600 py-2 text-base font-medium transition-colors"
+                  >
+                    Custom Prints
+                  </Link>
+                  <Link
+                    to={routes.about()}
                     onClick={closeMobileMenu}
                     className="block text-gray-600 hover:text-purple-600 py-2 text-base font-medium transition-colors"
                   >

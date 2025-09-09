@@ -138,7 +138,7 @@ const EnhancedProductCard = ({ product, index }) => {
         {/* Action Buttons */}
         <div className="flex gap-3">
           <Link
-            to={routes.product({ slug: product.slug })}
+            to={product.slug ? routes.product({ slug: product.slug }) : '#'}
             className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 text-white py-3 px-4 rounded-lg font-semibold text-center transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
           >
             View Details

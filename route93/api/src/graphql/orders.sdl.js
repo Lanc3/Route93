@@ -8,6 +8,7 @@ export const schema = gql`
     totalAmount: Float!
     shippingCost: Float!
     taxAmount: Float!
+    orderType: String!
     notes: String
     createdAt: DateTime!
     updatedAt: DateTime!
@@ -45,7 +46,7 @@ export const schema = gql`
       limit: Int
       offset: Int
     ): [Order!]! @requireAuth(roles: ["ADMIN"])
-    order(id: Int!): Order @requireAuth
+    order(id: Int!): Order @skipAuth
     findOrderByNumberAndEmail(orderNumber: String!, email: String!): Order @skipAuth
     ordersCount(
       status: String
@@ -60,6 +61,7 @@ export const schema = gql`
     totalAmount: Float!
     shippingCost: Float
     taxAmount: Float
+    orderType: String
     notes: String
     userId: Int!
     shippingAddress: CreateOrderAddressInput!
@@ -86,6 +88,10 @@ export const schema = gql`
     quantity: Int!
     price: Float!
     totalPrice: Float!
+    designUrl: String
+    designId: String
+    printFee: Float
+    printableItemId: Int
   }
 
 
@@ -96,6 +102,7 @@ export const schema = gql`
     totalAmount: Float
     shippingCost: Float
     taxAmount: Float
+    orderType: String
     notes: String
     userId: Int
     shippingAddressId: Int

@@ -1,4 +1,7 @@
-export const QUERY = gql`
+import { useQuery, gql } from '@redwoodjs/web'
+
+// Direct query for Success component
+export const ORDER_QUERY = gql`
   query FindOrderConfirmationQuery($id: Int!) {
     order(id: $id) {
       id
@@ -47,12 +50,22 @@ export const QUERY = gql`
         quantity
         price
         totalPrice
+        designUrl
+        designId
+        printFee
+        printableItemId
         product {
           id
           name
           description
           images
           slug
+        }
+        printableItem {
+          id
+          name
+          imageUrl
+          price
         }
       }
       payments {
@@ -67,34 +80,52 @@ export const QUERY = gql`
   }
 `
 
-export const Loading = () => (
-  <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-      <p className="mt-4 text-gray-600">Loading your order details...</p>
-    </div>
-  </div>
-)
+// Cache-busting query hook
+export const useOrderConfirmationQuery = (id) => {
+  return useQuery(ORDER_QUERY, {
+    variables: { id },
+    fetchPolicy: 'network-only',
+    notifyOnNetworkStatusChange: true,
+  })
+}
 
-export const Empty = () => (
-  <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div className="text-center">
-      <div className="text-6xl mb-4">📦</div>
-      <h3 className="text-lg font-medium text-gray-900 mb-2">Order not found</h3>
-      <p className="text-gray-500 mb-6">The order you're looking for doesn't exist or you don't have permission to view it.</p>
+export const Loading = () => {
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading your order details...</p>
+        <p className="mt-2 text-xs text-gray-500">Please wait…</p>
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
-export const Failure = ({ error }) => (
-  <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div className="text-center">
-      <div className="text-6xl mb-4">❌</div>
-      <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading order</h3>
-      <p className="text-red-600 mb-6">{error?.message}</p>
+export const Empty = () => {
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="text-center">
+        <div className="text-6xl mb-4">📦</div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Order not found</h3>
+        <p className="text-gray-500 mb-6">The order you're looking for doesn't exist or you don't have permission to view it.</p>
+        <p className="text-xs text-gray-400">No order found.</p>
+      </div>
     </div>
-  </div>
-)
+  )
+}
+
+export const Failure = ({ error }) => {
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="text-center">
+        <div className="text-6xl mb-4">❌</div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading order</h3>
+        <p className="text-red-600 mb-6">{error?.message}</p>
+        <p className="text-xs text-gray-400">Check browser console for detailed error information</p>
+      </div>
+    </div>
+  )
+}
 
 export const Success = ({ order }) => {
   const formatPrice = (price) => {
@@ -103,6 +134,8 @@ export const Success = ({ order }) => {
       currency: 'USD'
     }).format(price)
   }
+
+  //
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -158,32 +191,115 @@ export const Success = ({ order }) => {
         {/* Order Items */}
         <div className="border-t pt-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Order Items</h3>
+
+          {/* Items list */}
+
           <div className="space-y-4">
             {order.orderItems.map((item) => {
-              const images = item.product.images ? JSON.parse(item.product.images) : []
-              const primaryImage = images[0] || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNzUgMTUwSDIyNVYyNTBIMTc1VjE1MFoiIGZpbGw9IiM5Q0E4QjQiLz4KPHBhdGggZD0iTTE1MCAyMDBIMjUwTDIwMCAyNTBMMTUwIDIwMFoiIGZpbGw9IiM5Q0E4QjQiLz4KPC9zdmc+'
+              // Determine if this is a custom print item
+              const isCustomPrint = item.designUrl && item.printableItemId && item.printableItem
+
+              // Get display information based on item type
+              const displayImage = isCustomPrint
+                ? item.printableItem.imageUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNzUgMTUwSDIyNVYyNTBIMTc1VjE1MFoiIGZpbGw9IiM5Q0E4QjIiLz4KPHBhdGggZD0iTTE1MCAyMDBIMjUwTDIwMCAyNTBMMTUwIDIwMFoiIGZpbGw9IiM5Q0E4QjIiLz4KPC9zdmc+'
+                : (() => {
+                    const images = item.product.images ? JSON.parse(item.product.images) : []
+                    return images[0] || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNzUgMTUwSDIyNVYyNTBIMTc1VjE1MFoiIGZpbGw9IiM5Q0E4QjIiLz4KPHBhdGggZD0iTTE1MCAyMDBIMjUwTDIwMCAyNTBMMTUwIDIwMFoiIGZpbGw9IiM5Q0E4QjIiLz4KPC9zdmc+'
+                  })()
+
+              const displayName = isCustomPrint ? item.printableItem.name : item.product.name
+              const displayDescription = isCustomPrint ? `Custom Print on ${item.printableItem?.name || 'Selected Item'}` : item.product.description
 
               return (
-                <div key={item.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+                <div key={item.id} className={`flex space-x-4 p-4 border rounded-lg ${isCustomPrint ? 'bg-purple-50 border-purple-200' : ''}`}>
+
+
+                  {/* Image Section */}
                   <div className="flex-shrink-0">
-                    <img
-                      src={primaryImage}
-                      alt={item.product.name}
-                      className="w-16 h-16 object-cover rounded-lg"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{item.product.name}</h4>
-                    {item.product.description && (
-                      <p className="text-sm text-gray-600 line-clamp-2">{item.product.description}</p>
-                    )}
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-sm text-gray-600">Qty: {item.quantity}</span>
-                      <div className="text-right">
-                        <div className="font-medium">{formatPrice(item.totalPrice)}</div>
-                        <div className="text-sm text-gray-600">{formatPrice(item.price)} each</div>
+                    {isCustomPrint ? (
+                      // Custom Print Dual Image Display
+                      <div className="relative">
+                        <img
+                          src={item.printableItem.imageUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNzUgMTUwSDIyNVYyNTBIMTc1VjE1MFoiIGZpbGw9IiM5Q0E4QjIiLz4KPHBhdGggZD0iTTE1MCAyMDBIMjUwTDIwMCAyNTBMMTUwIDIwMFoiIGZpbGw9IiM5Q0E4QjIiLz4KPC9zdmc+'}
+                          alt="Printable Item"
+                          className="w-16 h-16 object-cover rounded-lg border-2 border-white"
+                          onError={(e) => {
+                            e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNzUgMTUwSDIyNVYyNTBIMTc1VjE1MFoiIGZpbGw9IiM5Q0E4QjIiLz4KPHBhdGggZD0iTTE1MCAyMDBIMjUwTDIwMCAyNTBMMTUwIDIwMFoiIGZpbGw9IiM5Q0E4QjIiLz4KPC9zdmc+'
+                          }}
+                        />
+                        <img
+                          src={item.designUrl}
+                          alt="Custom Design"
+                          className="w-8 h-8 object-cover rounded absolute -bottom-1 -right-1 border-2 border-white"
+                          onError={(e) => {
+                            e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNiAxNEgxOFYyNEgxNlYxNFoiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTE0IDE2SDE4VjIwSDE0VjE2WiIgZmlsbD0iIzlDQTlBQSIvPgo8L3N2Zz4='
+                          }}
+                        />
                       </div>
+                    ) : (
+                      <img
+                        src={displayImage}
+                        alt={displayName}
+                        className="w-16 h-16 object-cover rounded-lg"
+                        onError={(e) => {
+                          e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNzUgMTUwSDIyNVYyNTBIMTc1VjE1MFoiIGZpbGw9IiM5Q0E4QjIiLz4KPHBhdGggZD0iTTE1MCAyMDBIMjUwTDIwMCAyNTBMMTUwIDIwMFoiIGZpbGw9IiM5Q0E4QjIiLz4KPC9zdmc+'
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Content Section */}
+                  <div className="flex-1 min-w-0">
+                    {/* Custom Print Badge */}
+                    {isCustomPrint && (
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          Custom Print
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Item Name */}
+                    <h4 className="text-sm font-medium text-gray-900 truncate hover:text-purple-600 transition-colors">
+                      {isCustomPrint ? item.printableItem.name : item.product.name}
+                    </h4>
+
+                    {/* Description */}
+                    {displayDescription && (
+                      <p className="text-xs text-gray-600 line-clamp-2 mt-1">
+                        {displayDescription}
+                      </p>
+                    )}
+
+                    {/* Pricing Information */}
+                    <div className="flex items-center space-x-4 mt-2">
+                      {isCustomPrint ? (
+                        <>
+                          <div className="text-sm text-gray-600">
+                            Item: {formatPrice(item.printableItem?.price ?? item.price)}
+                          </div>
+                          {item.printFee ? (
+                            <div className="text-sm font-semibold text-purple-700">
+                              Print Fee: {formatPrice(item.printFee)}
+                            </div>
+                          ) : null}
+                        </>
+                      ) : (
+                        <div className="text-sm text-gray-600">
+                          {formatPrice(item.price)} each
+                        </div>
+                      )}
                     </div>
+
+                    {/* Total Price */}
+                    <div className={`text-sm font-semibold mt-1 ${isCustomPrint ? 'text-purple-700' : 'text-gray-900'}`}>
+                      Total: {formatPrice(item.totalPrice)}
+                    </div>
+                  </div>
+
+                  {/* Quantity and Price Summary */}
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-sm text-gray-600">Qty: {item.quantity}</span>
                   </div>
                 </div>
               )
@@ -323,3 +439,25 @@ export const Success = ({ order }) => {
     </div>
   )
 }
+
+export const QUERY = ORDER_QUERY
+
+const OrderConfirmationCell = ({ id }) => {
+  const { data, loading, error } = useOrderConfirmationQuery(id)
+
+  if (loading) {
+    return <Loading />
+  }
+
+  if (error) {
+    return <Failure error={error} />
+  }
+
+  if (!data?.order) {
+    return <Empty />
+  }
+
+  return <Success order={data.order} />
+}
+
+export default OrderConfirmationCell

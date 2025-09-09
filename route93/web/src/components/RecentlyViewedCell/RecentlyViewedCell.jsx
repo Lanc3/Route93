@@ -99,7 +99,7 @@ export const Success = ({ recentlyViewed }) => {
           return (
             <Link
               key={item.id}
-              to={routes.product({ slug: product.slug })}
+              to={product.slug ? routes.product({ slug: product.slug }) : '#'}
               className="group block"
             >
               <div className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow">

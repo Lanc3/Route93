@@ -32,10 +32,19 @@ export const QUERY = gql`
         quantity
         price
         totalPrice
+        designUrl
+        designId
+        printFee
+        printableItemId
         product {
           id
           name
           images
+        }
+        printableItem {
+          id
+          name
+          imageUrl
         }
       }
       payments {
@@ -174,14 +183,12 @@ export const Success = ({ orders, ordersCount }) => {
                   Payment
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
                 </th>
+                
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -192,10 +199,21 @@ export const Success = ({ orders, ordersCount }) => {
                 return (
                   <tr key={order.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
+                      <div className='flex items-center space-x-2'>
+                      <Link
+                          to={routes.adminOrderDetails({ id: order.id })}
+                          className="inline-flex items-center text-purple-600 hover:text-purple-800"
+                          title="View order details"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          View
+                        </Link>
+                        {/* <div className="text-sm font-medium text-gray-900">
                           #{order.orderNumber}
-                        </div>
+                        </div> */}
                         <div className="text-sm text-gray-500">
                           ID: {order.id}
                         </div>
@@ -215,11 +233,71 @@ export const Success = ({ orders, ordersCount }) => {
                       <div className="text-sm text-gray-900">
                         <div className="font-medium">{totalItems} items</div>
                         <div className="text-xs text-gray-500">
-                          {order.orderItems.slice(0, 2).map((item, index) => (
-                            <div key={item.id}>
-                              {item.quantity}x {item.product.name}
-                            </div>
-                          ))}
+                          {order.orderItems.slice(0, 2).map((item) => {
+                            // Determine if this is a custom print item
+                            const isCustomPrint = item.designUrl && item.printableItemId && item.printableItem
+
+                            // Resolve display image for non-custom items
+                            let productImageUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiA5SDE1VjE1SDEyVjlWM1oiIGZpbGw9IiM5Q0E4QjIiLz4KPHBhdGggZD0iTTEwIDExSDE1VjE2SDEwVjExWiIgZmlsbD0iIzlDQTlBQSIvPgo8L3N2Zz4='
+                            if (item.product?.images) {
+                              try {
+                                const images = JSON.parse(item.product.images)
+                                if (Array.isArray(images) && images.length > 0) {
+                                  productImageUrl = images[0]
+                                } else if (typeof item.product.images === 'string' && item.product.images.trim()) {
+                                  productImageUrl = item.product.images
+                                }
+                              } catch (e) {
+                                if (typeof item.product.images === 'string' && item.product.images.trim()) {
+                                  productImageUrl = item.product.images
+                                }
+                              }
+                            }
+
+                            const displayName = isCustomPrint ? item.printableItem.name : item.product.name
+
+                            return (
+                              <div key={item.id} className="flex items-center space-x-2 mb-0.5">
+                                <div className="relative flex-shrink-0">
+                                  {isCustomPrint ? (
+                                    <div className="relative">
+                                      <img
+                                        src={item.printableItem.imageUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIGZpbGw9IiNGM0Y0RjYiLz48cGF0aCBkPSJNMTIgOUgxNVYxNUgxMlY5VjN6IiBmaWxsPSIjOUNBOEIyIi8+PC9zdmc+'}
+                                        alt="Printable"
+                                        className="w-6 h-6 rounded object-cover border border-gray-200"
+                                        onError={(e) => { e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIGZpbGw9IiNGM0Y0RjYiLz48cGF0aCBkPSJNMTIgOUgxNVYxNUgxMlY5VjN6IiBmaWxsPSIjOUNBOEIyIi8+PC9zdmc+' }}
+                                      />
+                                      {item.designUrl && (
+                                        <img
+                                          src={item.designUrl}
+                                          alt="Design"
+                                          className="w-3 h-3 rounded absolute -bottom-0.5 -right-0.5 border-2 border-white"
+                                          onError={(e) => { e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAxMiAxMiIgZmlsbD0iI0YzRjRGNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiNGM0Y0RjYiLz48L3N2Zz4=' }}
+                                        />
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <img
+                                      src={productImageUrl}
+                                      alt={displayName}
+                                      className="w-6 h-6 rounded object-cover border border-gray-200"
+                                      onError={(e) => { e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0YzRjRGNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIGZpbGw9IiNGM0Y0RjYiLz48L3N2Zz4=' }}
+                                    />
+                                  )}
+                                </div>
+                                <div>
+                                  <div>
+                                    {item.quantity}x {displayName}
+                                    {isCustomPrint && (
+                                      <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-purple-100 text-purple-800">
+                                        Custom Print
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
                           {order.orderItems.length > 2 && (
                             <div className="text-gray-400">
                               +{order.orderItems.length - 2} more
@@ -245,9 +323,6 @@ export const Success = ({ orders, ordersCount }) => {
                         {paymentStatus.status}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(order.status)}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div>{formatDate(order.createdAt)}</div>
                       <div className="text-xs text-gray-400">
@@ -255,33 +330,26 @@ export const Success = ({ orders, ordersCount }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
-                        {/* Status Update Dropdown */}
-                        <select
-                          value={order.status}
-                          onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                          className="text-xs border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        >
-                          <option value="PENDING">Pending</option>
-                          <option value="CONFIRMED">Confirmed</option>
-                          <option value="PROCESSING">Processing</option>
-                          <option value="SHIPPED">Shipped</option>
-                          <option value="DELIVERED">Delivered</option>
-                          <option value="CANCELLED">Cancelled</option>
-                          <option value="REFUNDED">Refunded</option>
-                        </select>
+                      <div className="flex items-center justify-between space-x-2">
+                        {/* View Details - Left for reachability */}
                         
-                        {/* View Details Button - Coming Soon */}
-                        <button
-                          className="text-gray-400 cursor-not-allowed p-1"
-                          title="Order details (coming soon)"
-                          disabled
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                        </button>
+
+                        <div className="flex items-center justify-end space-x-2">
+                          {/* Status Update Dropdown */}
+                          <select
+                            value={order.status}
+                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                            className="text-xs border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          >
+                            <option value="PENDING">Pending</option>
+                            <option value="CONFIRMED">Confirmed</option>
+                            <option value="PROCESSING">Processing</option>
+                            <option value="SHIPPED">Shipped</option>
+                            <option value="DELIVERED">Delivered</option>
+                            <option value="CANCELLED">Cancelled</option>
+                            <option value="REFUNDED">Refunded</option>
+                          </select>
+                        </div>
                       </div>
                     </td>
                   </tr>

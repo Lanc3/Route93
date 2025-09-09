@@ -28,7 +28,8 @@ export const userCartItems = ({ userId }) => {
   return db.cartItem.findMany({
     where: { userId },
     include: {
-      product: true
+      product: true,
+      printableItem: true
     },
     orderBy: {
       createdAt: 'desc'
@@ -39,6 +40,38 @@ export const userCartItems = ({ userId }) => {
 export const createCartItem = async ({ input }) => {
   requireAuth()
   
+  // Ensure productId refers to an existing product. If not, derive one from printable item (find-or-create).
+  let validatedProduct = await db.product.findUnique({ where: { id: input.productId } })
+  if (!validatedProduct && input.printableItemId) {
+    const printable = await db.printableItem.findUnique({ where: { id: input.printableItemId } })
+    if (printable) {
+      // Try to find by deterministic slug PRINTABLE-<id>
+      const deterministicSlug = `printable-${printable.id}`
+      validatedProduct = await db.product.findFirst({ where: { slug: deterministicSlug } })
+      if (!validatedProduct) {
+        // Create a backing product for this printable item
+        validatedProduct = await db.product.create({
+          data: {
+            name: printable.name,
+            description: printable.description || `Printable product for ${printable.name}`,
+            price: printable.price || 0,
+            sku: `PRINTABLE-${printable.id}`,
+            slug: deterministicSlug,
+            status: 'ACTIVE',
+            inventory: 999999, // virtual stock for printable items
+            images: printable.imageUrl || null,
+          }
+        })
+      }
+      input.productId = validatedProduct.id
+    }
+  }
+  // Final validation
+  validatedProduct = await db.product.findUnique({ where: { id: input.productId } })
+  if (!validatedProduct) {
+    throw new Error('Selected printable item cannot be added to cart at this time (no backing product).')
+  }
+
   // Check if item already exists for this user and product
   const existingItem = await db.cartItem.findFirst({
     where: {
@@ -55,7 +88,8 @@ export const createCartItem = async ({ input }) => {
         quantity: existingItem.quantity + input.quantity
       },
       include: {
-        product: true
+        product: true,
+        printableItem: true
       }
     })
   } else {
@@ -63,7 +97,8 @@ export const createCartItem = async ({ input }) => {
     return db.cartItem.create({
       data: input,
       include: {
-        product: true
+        product: true,
+        printableItem: true
       }
     })
   }
@@ -71,12 +106,31 @@ export const createCartItem = async ({ input }) => {
 
 export const updateCartItem = ({ id, input }) => {
   requireAuth()
-  return db.cartItem.update({
-    data: input,
-    where: { id },
-    include: {
-      product: true
+
+  console.log('=== UPDATE CART ITEM DEBUG ===')
+  console.log('Cart item ID to update:', id)
+  console.log('Update input:', input)
+
+  // Check if cart item exists first
+  return db.cartItem.findUnique({
+    where: { id }
+  }).then(existingItem => {
+    if (!existingItem) {
+      console.log('Cart item not found in database:', id)
+      throw new Error(`Cart item with ID ${id} not found`)
     }
+
+    console.log('Found existing cart item:', existingItem)
+    return db.cartItem.update({
+      data: input,
+      where: { id },
+      include: {
+        product: true
+      }
+    })
+  }).catch(error => {
+    console.error('Error in updateCartItem:', error)
+    throw error
   })
 }
 
@@ -100,21 +154,52 @@ export const syncCart = async ({ items }) => {
     where: { userId: currentUser.id }
   })
 
-  // Create new cart items
-  const cartItems = await Promise.all(
-    items.map(item =>
-      db.cartItem.create({
-        data: {
-          userId: currentUser.id,
-          productId: item.productId,
-          quantity: item.quantity
-        },
-        include: {
-          product: true
+  // Create new cart items with validation/mapping similar to createCartItem
+  const cartItems = []
+  for (const item of items) {
+    let product = await db.product.findUnique({ where: { id: item.productId } })
+    if (!product && item.printableItemId) {
+      const printable = await db.printableItem.findUnique({ where: { id: item.printableItemId } })
+      if (printable) {
+        const slug = `printable-${printable.id}`
+        product = await db.product.findFirst({ where: { slug } })
+        if (!product) {
+          product = await db.product.create({
+            data: {
+              name: printable.name,
+              description: printable.description || `Printable product for ${printable.name}`,
+              price: printable.price || 0,
+              sku: `PRINTABLE-${printable.id}`,
+              slug,
+              status: 'ACTIVE',
+              inventory: 999999,
+              images: printable.imageUrl || null,
+            }
+          })
         }
-      })
-    )
-  )
+        item.productId = product.id
+      }
+    }
+    if (!item.productId) {
+      throw new Error('One or more cart items could not be synced due to missing backing product.')
+    }
+    const created = await db.cartItem.create({
+      data: {
+        userId: currentUser.id,
+        productId: item.productId,
+        quantity: item.quantity,
+        designUrl: item.designUrl,
+        designId: item.designId,
+        printFee: item.printFee,
+        printableItemId: item.printableItemId
+      },
+      include: {
+        product: true,
+        printableItem: true
+      }
+    })
+    cartItems.push(created)
+  }
 
   return cartItems
 }

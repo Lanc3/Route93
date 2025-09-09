@@ -201,7 +201,7 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
             </button>
 
             <Link
-              to={routes.product({ slug: product.slug })}
+              to={product.slug ? routes.product({ slug: product.slug }) : '#'}
               className="flex-1 inline-flex items-center justify-center px-4 py-3 rounded-lg font-semibold border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white transition-all"
               onClick={onClose}
             >

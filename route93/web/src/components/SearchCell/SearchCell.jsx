@@ -77,7 +77,7 @@ export const Success = ({ products, search, onProductClick }) => {
             return (
               <Link
                 key={product.id}
-                to={routes.product({ slug: product.slug })}
+                to={product.slug ? routes.product({ slug: product.slug }) : '#'}
                 onClick={() => handleProductClick(product)}
                 className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 transition-colors"
               >

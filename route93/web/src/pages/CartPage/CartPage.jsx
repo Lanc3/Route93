@@ -96,8 +96,13 @@ const CartPage = () => {
           <div className="lg:grid lg:grid-cols-12 lg:gap-x-12">
             {/* Cart Items */}
             <div className="lg:col-span-8">
-              <div className="space-y-4">
-                {items.map((item) => {
+              <div className="space-y-8">
+                {/* Regular Items */}
+                {items.filter(item => !item.printFee && !item.designId && !item.designUrl).length > 0 && (
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Products</h2>
+                    <div className="space-y-4">
+                      {items.filter(item => !item.printFee && !item.designId && !item.designUrl).map((item) => {
                   const price = item.product.salePrice || item.product.price
                   const isUpdating = updatingItems[item.id]
                   
@@ -122,7 +127,7 @@ const CartPage = () => {
                             <div>
                               <h3 className="text-lg font-medium text-gray-900">
                                 <Link
-                                  to={routes.product({ slug: item.product.slug })}
+                                  to={item.product.slug ? routes.product({ slug: item.product.slug }) : '#'}
                                   className="hover:text-purple-600 transition-colors"
                                 >
                                   {item.product.name}
@@ -202,7 +207,136 @@ const CartPage = () => {
                       </div>
                     </div>
                   )
-                })}
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom Print Items */}
+                {items.filter(item => item.printFee && item.designId && item.designUrl).length > 0 && (
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                      <svg className="w-5 h-5 mr-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
+                      </svg>
+                      Custom Prints
+                    </h2>
+                    <div className="space-y-4">
+                      {items.filter(item => item.printFee && item.designId && item.designUrl).map((item) => {
+                        const price = item.product.salePrice || item.product.price
+                        const isUpdating = updatingItems[item.id]
+
+                        return (
+                          <div key={item.id} className="bg-white rounded-lg shadow-sm border border-purple-200 p-6">
+                            <div className="flex items-start space-x-4">
+                              {/* Design and Printable Item Images */}
+                              <div className="flex-shrink-0">
+                                <div className="relative">
+                                  {/* Printable Item Image (bottom layer) */}
+                                  <img
+                                    src={item.printableItem?.imageUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAyNUMxNy4yNSAyNSAxNSAyMi43NSAxNSAyMEMxNSAxNy4yNSAxNy4yNSAxNSAyMCAxNUMyMi43NSAxNSAyNSAxNy4yNSAyNSAyMEMyNSAyMi43NSAyMi43NSAyNSAyMCAyNVoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+'}
+                                    alt="Printable Item"
+                                    className="w-20 h-20 object-cover rounded-lg border-2 border-white"
+                                    onError={(e) => {
+                                      e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAyNUMxNy4yNSAyNSAxNSAyMi43NSAxNSAyMEMxNSAxNy4yNSAxNy4yNSAxNSAyMCAxNUMyMi43NSAxNSAyNSAxNy4yNSAyNSAyMEMyNSAyMi43NSAyMi43NSAyNSAyMCAyNVoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+'
+                                    }}
+                                  />
+                                  {/* Design Image (top layer, overlaid) */}
+                                  <img
+                                    src={item.designUrl}
+                                    alt="Custom Design"
+                                    className="w-10 h-10 object-cover rounded absolute -bottom-2 -right-2 border-2 border-white"
+                                    onError={(e) => {
+                                      e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAyNUMxNy4yNSAyNSAxNSAyMi43NSAxNSAyMEMxNSAxNy4yNSAxNy4yNSAxNSAyMCAxNUMyMi43NSAxNSAyNSAxNy4yNSAyNSAyMEMyNSAyMi43NSAyMi43NSAyNSAyMCAyNVoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+'
+                                    }}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Custom Print Details */}
+                              <div className="flex-1">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-2 mb-2">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                        Custom Print
+                                      </span>
+                                    </div>
+
+                                    <Link
+                                      to={item.product.slug ? routes.product({ slug: item.product.slug }) : '#'}
+                                      className="block"
+                                    >
+                                      <h3 className="text-lg font-medium text-gray-900 hover:text-purple-600 transition-colors">
+                                        {item.product.name}
+                                      </h3>
+                                    </Link>
+
+                                    <div className="flex items-center space-x-6 mt-2">
+                                      <div className="text-sm text-gray-600">
+                                        Product: {formatPrice(price - item.printFee)}
+                                      </div>
+                                      <div className="text-sm font-medium text-purple-600">
+                                        Print Fee: {formatPrice(item.printFee)}
+                                      </div>
+                                      <div className="text-sm font-semibold text-purple-700">
+                                        Total: {formatPrice(price)}
+                                      </div>
+                                    </div>
+
+                                    {/* Quantity Controls */}
+                                    <div className="mt-4 flex items-center space-x-4">
+                                      <div className="flex items-center border border-gray-300 rounded-lg">
+                                        <button
+                                          onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                                          disabled={item.quantity <= 1 || isUpdating}
+                                          className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                                          </svg>
+                                        </button>
+                                        <span className="px-4 py-2 text-center min-w-[3rem] border-x border-gray-300">
+                                          {isUpdating ? '...' : item.quantity}
+                                        </span>
+                                        <button
+                                          onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                                          disabled={item.quantity >= item.product.inventory || isUpdating}
+                                          className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                          </svg>
+                                        </button>
+                                      </div>
+
+                                      {/* Remove Button */}
+                                      <button
+                                        onClick={() => handleRemoveItem(item.id)}
+                                        disabled={isUpdating}
+                                        className="text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
+                                      >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                      </button>
+                                    </div>
+
+                                    {item.product.inventory <= 5 && (
+                                      <div className="text-sm text-orange-600 mt-2">
+                                        Only {item.product.inventory} left in stock
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

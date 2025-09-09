@@ -176,7 +176,7 @@ const CheckoutForm = () => {
         status: 'PENDING',
         totalAmount: total,
         shippingCost: shipping,
-        taxAmount: tax,
+        taxAmount: vatAmount,
         shippingAddress: {
           firstName: shippingAddress.firstName,
           lastName: shippingAddress.lastName,
@@ -191,13 +191,23 @@ const CheckoutForm = () => {
           isDefault: false
         },
         orderItems: items.map(item => {
-          const price = item.product.salePrice || item.product.price
-          return {
+          const isCustomPrint = !!(item.printableItemId && (item.designId || item.designUrl))
+          const baseProductPrice = item.product.salePrice || item.product.price
+          const printableItemPrice = item.printableItem?.price
+          const unitPrice = isCustomPrint ? (printableItemPrice ?? baseProductPrice) : baseProductPrice
+          const unitPrintFee = item.printFee || 0
+          const orderItemData = {
             productId: item.product.id,
             quantity: item.quantity,
-            price: price,
-            totalPrice: price * item.quantity
+            price: unitPrice,
+            totalPrice: (unitPrice + unitPrintFee) * item.quantity,
+            designUrl: item.designUrl,
+            designId: item.designId,
+            printFee: item.printFee,
+            printableItemId: item.printableItemId
           }
+
+          return orderItemData
         })
       }
 
@@ -210,7 +220,7 @@ const CheckoutForm = () => {
         variables: {
           input: {
             amount: Math.round(total * 100),
-            currency: 'usd'
+            currency: 'eur'
           }
         }
       })
@@ -667,22 +677,81 @@ const CheckoutForm = () => {
               <h2 className="text-lg font-medium text-gray-900 mb-4">Order Summary</h2>
               
               {/* Order Items */}
-              <div className="space-y-3 mb-6">
-                {items.map((item) => {
-                  const price = item.product.salePrice || item.product.price
-                  return (
-                    <div key={item.id} className="flex items-center space-x-3">
-                      <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                        📦
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{item.product.name}</div>
-                        <div className="text-sm text-gray-500">Qty: {item.quantity}</div>
-                      </div>
-                      <div className="font-medium">{formatPrice(price * item.quantity)}</div>
+              <div className="space-y-4 mb-6">
+                {/* Regular Items */}
+                {items.filter(item => !item.printFee && !item.designId && !item.designUrl).length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-2">Products</h3>
+                    <div className="space-y-2">
+                      {items.filter(item => !item.printFee && !item.designId && !item.designUrl).map((item) => {
+                        const price = item.product.salePrice || item.product.price
+                        return (
+                          <div key={item.id} className="flex items-center space-x-3">
+                            <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                              📦
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium text-sm">{item.product.name}</div>
+                              <div className="text-sm text-gray-500">Qty: {item.quantity}</div>
+                            </div>
+                            <div className="font-medium">{formatPrice(price * item.quantity)}</div>
+                          </div>
+                        )
+                      })}
                     </div>
-                  )
-                })}
+                  </div>
+                )}
+
+                {/* Custom Print Items */}
+                {items.filter(item => item.printFee && item.designId && item.designUrl).length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                      <svg className="w-3 h-3 mr-1 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
+                      </svg>
+                      Custom Prints
+                    </h3>
+                    <div className="space-y-2">
+                      {items.filter(item => item.printFee && item.designId && item.designUrl).map((item) => {
+                        const price = item.product.salePrice || item.product.price
+                        return (
+                          <div key={item.id} className="flex items-center space-x-3 p-2 bg-purple-50 rounded-lg border border-purple-200">
+                            {/* Design and Printable Item Images */}
+                            <div className="flex-shrink-0">
+                              <div className="relative">
+                                {/* Printable Item Image (bottom layer) */}
+                                <img
+                                  src={item.printableItem?.imageUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNiAxNEgxOFYyNEgxNlYxNFoiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTE0IDE2SDE4VjIwSDE0VjE2WiIgZmlsbD0iIzlDQTlBQSIvPgo8L3N2Zz4='}
+                                  alt="Printable Item"
+                                  className="w-10 h-10 object-cover rounded-lg border-2 border-white"
+                                  onError={(e) => {
+                                    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNiAxNEgxOFYyNEgxNlYxNFoiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTE0IDE2SDE4VjIwSDE0VjE2WiIgZmlsbD0iIzlDQTlBQSIvPgo8L3N2Zz4='
+                                  }}
+                                />
+                                {/* Design Image (top layer, overlaid) */}
+                                <img
+                                  src={item.designUrl}
+                                  alt="Custom Design"
+                                  className="w-6 h-6 object-cover rounded absolute -bottom-1 -right-1 border-2 border-white"
+                                  onError={(e) => {
+                                    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiAxMkgxNFYxOEgxMlgxMloiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTEwIDE0SDE0VjE4SDEwVjE0WiIgZmlsbD0iIzlDQTlBQSIvPgo8L3N2Zz4='
+                                  }}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex-1">
+                              <div className="font-medium text-sm">{item.product.name}</div>
+                              <div className="text-xs text-purple-600">Custom Print + €{item.printFee}</div>
+                              <div className="text-sm text-gray-500">Qty: {item.quantity}</div>
+                            </div>
+                            <div className="font-medium">{formatPrice((price + item.printFee) * item.quantity)}</div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Totals */}

@@ -160,7 +160,7 @@ export const Payment = {
 
 export const createPaymentIntent = async ({ input }) => {
   try {
-    const { amount, currency = 'usd', orderId } = input
+    const { amount, currency = 'eur', orderId } = input
 
     // Validate amount
     if (!amount || amount < 50) { // Minimum $0.50

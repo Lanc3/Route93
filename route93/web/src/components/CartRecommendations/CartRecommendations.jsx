@@ -119,7 +119,7 @@ const ProductRecommendationCard = ({ product }) => {
 
   return (
     <Link
-      to={routes.product({ slug: product.slug })}
+      to={product.slug ? routes.product({ slug: product.slug }) : '#'}
       className="group block bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-all"
     >
       <div className="aspect-square overflow-hidden">
