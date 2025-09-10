@@ -71,6 +71,8 @@ const Routes = () => {
         <Route path="/collections" page={CollectionsPage} name="collections" />
         <Route path="/product/{slug:String}" page={ProductPage} name="product" />
         <Route path="/products" page={ProductsPage} name="products" />
+        <Route path="/wishlist" page={WishlistPage} name="wishlist" />
+        <Route path="/track/{token:String}" page={OrderTrackingPage} name="orderTracking" />
         <Route path="/cart" page={CartPage} name="cart" />
         <Route path="/custom-prints" page={CustomPrintsPage} name="customPrints" />
         <Route path="/" page={HomePage} name="home" />

@@ -47,6 +47,7 @@ export const schema = gql`
       offset: Int
     ): [Order!]! @requireAuth(roles: ["ADMIN"])
     order(id: Int!): Order @skipAuth
+    orderByTrackingToken(token: String!): Order @skipAuth
     findOrderByNumberAndEmail(orderNumber: String!, email: String!): Order @skipAuth
     ordersCount(
       status: String

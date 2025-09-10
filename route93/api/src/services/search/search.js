@@ -22,12 +22,33 @@ export const advancedSearch = async ({
 
   // Text search
   if (query) {
-    where.OR = [
-      { name: { contains: query, mode: 'insensitive' } },
-      { description: { contains: query, mode: 'insensitive' } },
-      { tags: { contains: query, mode: 'insensitive' } },
-      { sku: { contains: query, mode: 'insensitive' } },
-    ]
+    // Expand with synonyms
+    const synonymRecords = await db.searchSynonym.findMany({
+      where: { OR: [{ term: { equals: query, mode: 'insensitive' } }, { isActive: true }] },
+      take: 50,
+    })
+    const expandedTerms = new Set([query])
+    for (const record of synonymRecords) {
+      try {
+        const list = JSON.parse(record.synonyms)
+        if (Array.isArray(list)) {
+          list.forEach((t) => t && expandedTerms.add(String(t)))
+        }
+      } catch (_) {
+        // ignore bad JSON
+      }
+      if (record.term) expandedTerms.add(record.term)
+    }
+
+    const likeClauses = [...expandedTerms].map((term) => ({
+      OR: [
+        { name: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+        { tags: { contains: term, mode: 'insensitive' } },
+        { sku: { contains: term, mode: 'insensitive' } },
+      ],
+    }))
+    where.OR = likeClauses.flatMap((c) => c.OR)
   }
 
   // Category filter

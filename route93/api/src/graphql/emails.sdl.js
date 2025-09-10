@@ -46,6 +46,7 @@ export const schema = gql`
     # Email sending mutations
     sendPasswordResetEmail(email: String!, resetToken: String!, userName: String!): Boolean! @skipAuth
     sendOrderConfirmationEmail(orderId: Int!): Boolean! @requireAuth
+    sendReviewRequestEmail(orderId: Int!): Boolean! @requireAuth
     sendLowStockAlert(productIds: [Int!]!, threshold: Int): Boolean! @requireAuth(roles: ["ADMIN"])
     
     # Test email sending

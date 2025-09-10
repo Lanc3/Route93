@@ -145,6 +145,12 @@ const MainLayout = ({ children }) => {
               >
                 Products
               </Link>
+              <Link 
+                to={routes.wishlist()} 
+                className="text-gray-600 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors"
+              >
+                Wishlist
+              </Link>
               <Link
                 to={routes.collections()}
                 className="text-gray-600 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors"

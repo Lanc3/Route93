@@ -27,6 +27,8 @@ model User {
   searchAnalytics     SearchAnalytics[]
   recentlyViewed      RecentlyViewed[]
   mediaAssets         MediaAsset[]
+  wishlists           Wishlist[]
+  priceAlerts         PriceAlert[]
 
   @@map("users")
 }
@@ -80,6 +82,9 @@ model Product {
   searchAnalytics SearchAnalytics[]
   recentlyViewed   RecentlyViewed[]
   searchIndex      ProductSearchIndex[]
+  stockAlerts      StockAlert[]
+  wishlists        Wishlist[]
+  priceAlerts      PriceAlert[]
 
   @@map("products")
 }
@@ -105,6 +110,9 @@ model ProductVariant {
   cartItems   CartItem[]
   orderItems  OrderItem[]
   reviews     Review[]
+  stockAlerts StockAlert[]
+  wishlists   Wishlist[]
+  priceAlerts PriceAlert[]
 
   @@map("product_variants")
 }
@@ -192,6 +200,8 @@ model Order {
   deliveredAt       DateTime?
   estimatedDelivery DateTime?
   trackingEvents    Json?       // Store tracking history as JSON
+  trackingToken     String?     @unique
+  reviewRequestSentAt DateTime?
   orderItems        OrderItem[]
   orderDiscounts    OrderDiscount[]
   billingAddress    Address     @relation("BillingAddress", fields: [billingAddressId], references: [id])
@@ -363,6 +373,76 @@ model ProductSearchIndex {
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("product_search_index")
+}
+
+// Users can subscribe to receive an alert when a product or variant is back in stock
+model StockAlert {
+  id         Int            @id @default(autoincrement())
+  productId  Int
+  variantId  Int?
+  channel    String         @default("EMAIL") // EMAIL or SMS
+  email      String?
+  phone      String?
+  unsubToken String         @unique
+  notifiedAt DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  product    Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@map("stock_alerts")
+}
+
+// Users can save products for later
+model Wishlist {
+  id         Int            @id @default(autoincrement())
+  userId     Int
+  productId  Int
+  variantId  Int?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product    Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, variantId])
+  @@map("wishlists")
+}
+
+// Users can get notified when a product goes on sale or hits a price threshold
+model PriceAlert {
+  id          Int            @id @default(autoincrement())
+  userId      Int?
+  email       String?
+  productId   Int
+  variantId   Int?
+  targetType  String         @default("SALE") // SALE or THRESHOLD
+  threshold   Float?
+  unsubToken  String         @unique
+  notifiedAt  DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  user        User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  product     Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@map("price_alerts")
+}
+
+// Curated synonyms to enhance search relevance and typo tolerance support
+model SearchSynonym {
+  id        Int      @id @default(autoincrement())
+  term      String
+  synonyms  String   // JSON array of synonyms as string
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([term])
+  @@map("search_synonyms")
 }
 
 model DiscountCode {

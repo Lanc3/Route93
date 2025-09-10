@@ -1,4 +1,5 @@
 import { db } from 'src/lib/db'
+import { notifyStockAlerts } from 'src/services/stockAlerts/stockAlerts'
 import { requireAuth } from 'src/lib/auth'
 
 export const products = async ({
@@ -501,7 +502,8 @@ export const updateProductInventory = async ({ id, inventory }) => {
     throw new Error('Inventory cannot be negative')
   }
 
-  return db.product.update({
+  const before = await db.product.findUnique({ where: { id }, select: { inventory: true } })
+  const updated = await db.product.update({
     where: { id },
     data: { inventory },
     include: {
@@ -513,6 +515,12 @@ export const updateProductInventory = async ({ id, inventory }) => {
       },
     },
   })
+
+  if ((before?.inventory || 0) <= 0 && updated.inventory > 0) {
+    // fire-and-forget
+    notifyStockAlerts({ productId: id }).catch(() => {})
+  }
+  return updated
 }
 
 export const bulkUpdateInventory = async ({ updates }) => {
@@ -542,6 +550,13 @@ export const bulkUpdateInventory = async ({ updates }) => {
       })
     )
   )
+
+  // trigger notifications for any that crossed the threshold
+  for (const p of updatedProducts) {
+    if (p.inventory > 0) {
+      notifyStockAlerts({ productId: p.id }).catch(() => {})
+    }
+  }
 
   return updatedProducts
 }

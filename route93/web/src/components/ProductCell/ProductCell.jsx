@@ -3,6 +3,8 @@ import { Link, routes } from '@redwoodjs/router'
 import { useCart } from 'src/contexts/CartContext'
 import { toast } from '@redwoodjs/web/toast'
 import ProductReviews from 'src/components/ProductReviews/ProductReviews'
+import StockAlertForm from 'src/components/StockAlertForm/StockAlertForm'
+import WishlistButton from 'src/components/WishlistButton/WishlistButton'
 import { parseProductImages, parseProductTags } from 'src/lib/imageUtils'
 
 export const QUERY = gql`
@@ -118,6 +120,7 @@ export const Success = ({ product }) => {
   const [quantity, setQuantity] = useState(1)
   const [activeTab, setActiveTab] = useState('description')
   const [isAddingToCart, setIsAddingToCart] = useState(false)
+  const [showStockAlert, setShowStockAlert] = useState(false)
 
   // Parse images and tags using utility functions
   const images = parseProductImages(product.images)
@@ -333,7 +336,7 @@ export const Success = ({ product }) => {
                 </div>
               </div>
 
-              <div className="flex space-x-4">
+              <div className="flex space-x-4 items-center">
                 <button
                   onClick={handleAddToCart}
                   disabled={!isInStock || isAddingToCart}
@@ -361,11 +364,12 @@ export const Success = ({ product }) => {
                   )}
                 </button>
                 
-                <button className="btn-outline px-6">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                </button>
+                <WishlistButton productId={product.id} />
+                {!isInStock && (
+                  <button onClick={() => setShowStockAlert(true)} className="btn-outline">
+                    Notify me
+                  </button>
+                )}
               </div>
             </div>
 
@@ -432,6 +436,12 @@ export const Success = ({ product }) => {
                     <p className="text-gray-500 italic">No description available for this product.</p>
                   )}
                 </div>
+                {!isInStock && (
+                  <div className="mt-6">
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">Get notified when back in stock</h4>
+                    <StockAlertForm productId={product.id} />
+                  </div>
+                )}
               </div>
             )}
 

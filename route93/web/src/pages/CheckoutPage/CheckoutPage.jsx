@@ -6,7 +6,8 @@ import { toast } from '@redwoodjs/web/toast'
 import { useCart } from 'src/contexts/CartContext'
 import { useAuth } from 'src/auth'
 import { loadStripe } from '@stripe/stripe-js'
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
+import { Elements, CardElement, PaymentRequestButtonElement, useStripe, useElements } from '@stripe/react-stripe-js'
+import AddressAutocomplete from 'src/components/AddressAutocomplete/AddressAutocomplete'
 import { formatPrice, calculateCartVat, calculateShippingVat } from 'src/lib/currency'
 import { ALL_COUNTRIES } from 'src/lib/countries'
 
@@ -73,6 +74,10 @@ const CheckoutForm = () => {
   
   const [processing, setProcessing] = useState(false)
   const [paymentIntentId, setPaymentIntentId] = useState(null)
+  const [clientSecret, setClientSecret] = useState(null)
+  const [paymentRequest, setPaymentRequest] = useState(null)
+  const [canMakePayment, setCanMakePayment] = useState(false)
+  const [walletSupport, setWalletSupport] = useState(null)
   
   // Form states
   const [shippingAddress, setShippingAddress] = useState({
@@ -115,8 +120,159 @@ const CheckoutForm = () => {
   const shipping = shippingVatCalc.grossPrice
   const total = subtotal + vatAmount + baseShipping
 
-  // We'll create the payment intent after order creation
-  // No need for initial payment intent creation
+  // Shipping ETA
+  const [eta, setEta] = useState(null)
+  useEffect(() => {
+    const fetchEta = async () => {
+      try {
+        const res = await fetch('/.redwood/functions/graphql', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: `query($country:String!,$method:String!){ shippingEstimate(country:$country, method:$method){ minDays maxDays commitment } }`, variables: { country: customerCountry, method: shippingMethod } })
+        })
+        const json = await res.json()
+        setEta(json.data?.shippingEstimate || null)
+      } catch (_) { setEta(null) }
+    }
+    fetchEta()
+  }, [customerCountry, shippingMethod])
+
+  // Keep Payment Request total in sync as the order total changes
+  useEffect(() => {
+    if (paymentRequest) {
+      try {
+        paymentRequest.update({
+          total: { label: 'Route93 Order', amount: Math.round(total * 100) },
+        })
+      } catch (_) {
+        // ignore
+      }
+    }
+  }, [paymentRequest, total])
+
+  // Prepare Payment Request Button when possible
+  useEffect(() => {
+    const setupPaymentRequest = async () => {
+      if (!stripe || items.length === 0) return
+
+      try {
+        // Create a PaymentIntent for wallet flows
+        const { data: pi } = await createPaymentIntent({
+          variables: { input: { amount: Math.round(total * 100), currency: 'eur' } }
+        })
+        setClientSecret(pi.createPaymentIntent.clientSecret)
+
+        const pr = stripe.paymentRequest({
+          country: (shippingAddress.country || 'IE'),
+          currency: 'eur',
+          total: { label: 'Route93 Order', amount: Math.round(total * 100) },
+          requestPayerName: true,
+          requestPayerEmail: true,
+          requestPayerPhone: false,
+          requestShipping: false,
+        })
+
+        const result = await pr.canMakePayment()
+        if (result) {
+          setPaymentRequest(pr)
+          setCanMakePayment(true)
+          setWalletSupport(result)
+
+          pr.on('paymentmethod', async (ev) => {
+            try {
+              // Create order
+              const orderInput = {
+                userId: currentUser.id,
+                status: 'PENDING',
+                totalAmount: total,
+                shippingCost: shipping,
+                taxAmount: vatAmount,
+                shippingAddress: {
+                  firstName: shippingAddress.firstName,
+                  lastName: shippingAddress.lastName,
+                  company: '',
+                  address1: shippingAddress.address1,
+                  address2: shippingAddress.address2,
+                  city: shippingAddress.city,
+                  state: shippingAddress.state,
+                  zipCode: shippingAddress.zipCode,
+                  country: shippingAddress.country,
+                  phone: shippingAddress.phone,
+                  isDefault: false
+                },
+                orderItems: items.map(item => {
+                  const isCustomPrint = !!(item.printableItemId && (item.designId || item.designUrl))
+                  const baseProductPrice = item.product.salePrice || item.product.price
+                  const printableItemPrice = item.printableItem?.price
+                  const unitPrice = isCustomPrint ? (printableItemPrice ?? baseProductPrice) : baseProductPrice
+                  const unitPrintFee = item.printFee || 0
+                  return {
+                    productId: item.product.id,
+                    quantity: item.quantity,
+                    price: unitPrice,
+                    totalPrice: (unitPrice + unitPrintFee) * item.quantity,
+                    designUrl: item.designUrl,
+                    designId: item.designId,
+                    printFee: item.printFee,
+                    printableItemId: item.printableItemId
+                  }
+                })
+              }
+              const { data: orderData } = await createOrder({ variables: { input: orderInput } })
+
+              // Confirm with payment method from wallet
+              const confirmResult = await stripe.confirmCardPayment(clientSecret, {
+                payment_method: ev.paymentMethod.id,
+              }, { handleActions: true })
+
+              if (confirmResult.error) {
+                ev.complete('fail')
+                toast.error(confirmResult.error.message)
+                await recordFailedPayment({ variables: { input: {
+                  amount: total,
+                  status: 'FAILED',
+                  method: 'STRIPE_WALLET',
+                  orderId: orderData.createOrder.id,
+                  errorCode: confirmResult.error.code || 'STRIPE_ERROR',
+                  errorMessage: confirmResult.error.message,
+                  errorType: confirmResult.error.type || 'wallet_error'
+                } } })
+                return
+              }
+
+              if (confirmResult.paymentIntent && confirmResult.paymentIntent.status === 'succeeded') {
+                ev.complete('success')
+                await createPayment({ variables: { input: {
+                  amount: total,
+                  status: 'COMPLETED',
+                  method: 'STRIPE_WALLET',
+                  transactionId: confirmResult.paymentIntent.id,
+                  orderId: orderData.createOrder.id
+                } } })
+                clearCart()
+                navigate(routes.orderConfirmation({ id: orderData.createOrder.id }))
+              } else {
+                ev.complete('fail')
+                toast.error('Payment was not completed')
+              }
+            } catch (err) {
+              ev.complete('fail')
+              console.error('Wallet payment error:', err)
+              toast.error('Wallet payment failed')
+            }
+          })
+        } else {
+          setCanMakePayment(false)
+          setWalletSupport(null)
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    setupPaymentRequest()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stripe, total, items.length, shippingAddress])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -495,12 +651,10 @@ const CheckoutForm = () => {
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Address Line 1 *</label>
-                  <input
-                    type="text"
+                  <AddressAutocomplete
                     value={shippingAddress.address1}
-                    onChange={(e) => setShippingAddress({...shippingAddress, address1: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
+                    onAddressSelected={(addr) => setShippingAddress({ ...shippingAddress, ...addr })}
+                    onChange={(val) => setShippingAddress({ ...shippingAddress, address1: val })}
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -622,11 +776,35 @@ const CheckoutForm = () => {
                   </label>
                 ))}
               </div>
+              {eta && (
+                <div className="mt-3 text-sm text-gray-600">
+                  Estimated delivery: <span className="font-medium">{eta.commitment}</span>
+                </div>
+              )}
             </div>
 
             {/* Payment Information */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">Payment Information</h2>
+
+              {canMakePayment && paymentRequest && (
+                <div className="mb-4">
+                  <PaymentRequestButtonElement options={{ paymentRequest }} />
+                  {walletSupport && (
+                    <div className="text-xs text-gray-600 mt-2">
+                      {walletSupport.applePay && <span className="mr-2">Apple Pay available</span>}
+                      {walletSupport.googlePay && <span className="mr-2">Google Pay available</span>}
+                      {!walletSupport.applePay && !walletSupport.googlePay && <span>Wallet available</span>}
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-500 mt-2">or pay with card</div>
+                </div>
+              )}
+              {!canMakePayment && (
+                <div className="mb-4 text-xs text-gray-500">
+                  Digital wallets are not available on this device/browser. You can pay securely with card below.
+                </div>
+              )}
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Card Information</label>

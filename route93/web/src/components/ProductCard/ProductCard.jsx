@@ -2,6 +2,7 @@ import { Link, routes } from '@redwoodjs/router'
 import { useCart } from 'src/contexts/CartContext'
 import { toast } from '@redwoodjs/web/toast'
 import { parseProductImages } from 'src/lib/imageUtils'
+import WishlistButton from 'src/components/WishlistButton/WishlistButton'
 
 const ProductCard = ({ product }) => {
   const { addItem } = useCart()
@@ -10,6 +11,7 @@ const ProductCard = ({ product }) => {
   
   const displayPrice = product.salePrice || product.price
   const hasDiscount = product.salePrice && product.salePrice < product.price
+  const discountPercent = hasDiscount ? Math.round(((product.price - product.salePrice) / product.price) * 100) : 0
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow group">
@@ -25,9 +27,14 @@ const ProductCard = ({ product }) => {
         {/* Badges */}
         <div className="absolute top-2 left-2 space-y-1">
           {hasDiscount && (
-            <span className="bg-red-500 text-white px-2 py-1 text-xs font-semibold rounded">
-              Sale
-            </span>
+            <div className="flex items-center gap-1">
+              <span className="bg-red-500 text-white px-2 py-1 text-xs font-semibold rounded">
+                Sale
+              </span>
+              <span className="bg-red-100 text-red-700 px-2 py-1 text-xs font-semibold rounded">
+                -{discountPercent}%
+              </span>
+            </div>
           )}
           {product.inventory <= 5 && product.inventory > 0 && (
             <span className="bg-orange-500 text-white px-2 py-1 text-xs font-semibold rounded block">
@@ -43,11 +50,7 @@ const ProductCard = ({ product }) => {
 
         {/* Quick Actions */}
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button className="bg-white p-2 rounded-full shadow-md hover:bg-gray-50 transition-colors">
-            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </button>
+          <WishlistButton productId={product.id} />
         </div>
       </div>
 
@@ -105,21 +108,26 @@ const ProductCard = ({ product }) => {
           </div>
         </div>
 
-        <button 
-          onClick={() => {
-            if (product.inventory > 0) {
-              addItem(product, 1)
-            }
-          }}
-          className={`w-full py-2 px-4 rounded-lg font-semibold transition-colors ${
-            product.inventory > 0 
-              ? 'btn-primary hover:bg-purple-700' 
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-          disabled={product.inventory === 0}
-        >
-          {product.inventory === 0 ? 'Out of Stock' : 'Add to Cart'}
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => {
+              if (product.inventory > 0) {
+                addItem(product, 1)
+              }
+            }}
+            className={`flex-1 py-2 px-4 rounded-lg font-semibold transition-colors ${
+              product.inventory > 0 
+                ? 'btn-primary hover:bg-purple-700' 
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+            disabled={product.inventory === 0}
+          >
+            {product.inventory === 0 ? 'Out of Stock' : 'Add to Cart'}
+          </button>
+          <div className="flex items-center">
+            <WishlistButton productId={product.id} />
+          </div>
+        </div>
       </div>
     </div>
   )

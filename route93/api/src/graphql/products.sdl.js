@@ -36,6 +36,18 @@ export const schema = gql`
     reviews: Int!
   }
 
+  # Minimal ProductVariant type to support relations in other SDLs
+  type ProductVariant {
+    id: Int!
+    sku: String!
+    price: Float
+    salePrice: Float
+    inventory: Int!
+    isDefault: Boolean!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+  }
+
   type Query {
     products(
       categoryId: Int

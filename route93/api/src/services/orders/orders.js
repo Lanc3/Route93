@@ -162,6 +162,21 @@ export const order = async ({ id }) => {
   }
 }
 
+export const orderByTrackingToken = async ({ token }) => {
+  return db.order.findFirst({
+    where: { trackingToken: token },
+    include: {
+      user: { select: { id: true, name: true } },
+      orderItems: {
+        include: {
+          product: { select: { id: true, name: true, images: true, price: true } },
+        },
+      },
+      payments: true,
+    },
+  })
+}
+
 export const findOrderByNumberAndEmail = ({ orderNumber, email }) => {
   return db.order.findFirst({
     where: {

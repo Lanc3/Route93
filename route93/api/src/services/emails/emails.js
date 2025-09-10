@@ -555,3 +555,20 @@ Need help? Contact our support team at aaron@route93.ie
     throw error
   }
 }
+
+// Review request email (simple)
+export const sendReviewRequestEmail = async ({ orderId }) => {
+  const order = await db.order.findUnique({ where: { id: orderId }, include: { user: true, orderItems: { include: { product: true } } } })
+  if (!order?.user?.email) return false
+  const itemsList = order.orderItems.map(i => `• ${i.product?.name || 'Product'}`).join('<br/>')
+  const html = `<!DOCTYPE html><html><body style="font-family: Arial, sans-serif;">
+    <h2>How was your purchase?</h2>
+    <p>We'd love your feedback on your recent order ${order.orderNumber}.</p>
+    <p>${itemsList}</p>
+    <p><a href="${process.env.REDWOOD_WEB_URL}/user-account">Leave a review</a></p>
+  </body></html>`
+  const text = `How was your purchase?\nWe'd love your feedback for order ${order.orderNumber}.`
+  await sendEmailDirect({ to: order.user.email, subject: 'Review your purchase - Route93', html, text })
+  await db.order.update({ where: { id: orderId }, data: { reviewRequestSentAt: new Date() } })
+  return true
+}
