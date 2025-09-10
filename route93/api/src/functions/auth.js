@@ -68,6 +68,9 @@ export const handler = async (event, context) => {
     // by the `logIn()` function from `useAuth()` in the form of:
     // `{ message: 'Error message' }`
     handler: (user) => {
+      if (!user.emailVerifiedAt) {
+        throw new Error('Please verify your email before logging in')
+      }
       return user
     },
 
@@ -124,21 +127,51 @@ export const handler = async (event, context) => {
     //
     // If this returns anything else, it will be returned by the
     // `signUp()` function in the form of: `{ message: 'String here' }`.
-    handler: ({
+    handler: async ({
       username,
       hashedPassword,
       salt,
       userAttributes,
     }) => {
-      return db.user.create({
+      const created = await db.user.create({
         data: {
           email: username,
           hashedPassword: hashedPassword,
           salt: salt,
           name: userAttributes.name || 'User',
           role: userAttributes.role || 'CLIENT',
+          phone: userAttributes.phone || null,
         },
       })
+      // Optionally create default address if provided via userAttributes
+      if (userAttributes.address1) {
+        try {
+          await db.address.create({
+            data: {
+              userId: created.id,
+              firstName: userAttributes.name?.split(' ')[0] || 'First',
+              lastName: userAttributes.name?.split(' ')[1] || 'Last',
+              address1: userAttributes.address1,
+              address2: userAttributes.address2 || null,
+              city: userAttributes.city || '',
+              state: userAttributes.state || '',
+              zipCode: userAttributes.zip || userAttributes.zipCode || '',
+              country: userAttributes.country || 'IE',
+              phone: userAttributes.phone || null,
+              isDefault: true,
+            },
+          })
+        } catch (e) {
+          console.error('Failed creating default address on signup:', e)
+        }
+      }
+      try {
+        const { sendVerificationEmail } = await import('../services/emails/emails.js')
+        await sendVerificationEmail({ userId: created.id })
+      } catch (e) {
+        console.error('Failed to send verification email:', e)
+      }
+      return { message: 'Signup successful. Please check your email to verify your account.' }
     },
 
     // Include any format checks for password here. Return `true` if the

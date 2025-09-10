@@ -75,5 +75,8 @@ export const schema = gql`
     updateCurrentUser(input: UpdateCurrentUserInput!): User! @requireAuth
     updateUserRole(id: Int!, role: String!): User! @requireAuth(roles: ["ADMIN"])
     deleteUser(id: Int!): User! @requireAuth(roles: ["ADMIN"])
+    verifyEmail(token: String!): Boolean! @skipAuth
+    resendVerification: Boolean! @requireAuth
+    resendVerificationByEmail(email: String!): Boolean! @skipAuth
   }
 `

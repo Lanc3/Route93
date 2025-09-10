@@ -13,9 +13,12 @@ import { Metadata } from '@redwoodjs/web'
 import { toast, Toaster } from '@redwoodjs/web/toast'
 
 import { useAuth } from 'src/auth'
+import { useMutation } from '@redwoodjs/web'
 
 const LoginPage = () => {
   const { isAuthenticated, currentUser, logIn } = useAuth()
+  const RESEND_PUBLIC = gql`mutation ResendByEmail($email:String!){ resendVerificationByEmail(email:$email) }`
+  const [resendByEmail] = useMutation(RESEND_PUBLIC)
 
   const usernameRef = useRef(null)
   useEffect(() => {
@@ -45,7 +48,12 @@ const LoginPage = () => {
         }, 100) // Small delay to avoid race conditions
       }
     } catch (error) {
-      toast.error('Login failed. Please try again.')
+      const msg = (error?.message || '').toLowerCase()
+      if (msg.includes('verify your email')) {
+        toast.error('Please verify your email. We can resend the link.')
+      } else {
+        toast.error('Login failed. Please try again.')
+      }
     }
   }
 
@@ -129,6 +137,24 @@ const LoginPage = () => {
 
                   <div className="rw-button-group">
                     <Submit className="rw-button rw-button-blue">Login</Submit>
+                  </div>
+                  <div className="mt-3 text-center">
+                    <button
+                      type="button"
+                      className="rw-link text-sm"
+                      onClick={async ()=>{
+                        try {
+                          const email = (document.querySelector('input[name="username"]').value || '').trim()
+                          if (!email) { toast.error('Enter your email above first'); return }
+                          await resendByEmail({ variables: { email } })
+                          toast.success('Verification email sent (if the account exists)')
+                        } catch (e) {
+                          toast.error('Failed to resend')
+                        }
+                      }}
+                    >
+                      Resend verification email
+                    </button>
                   </div>
                 </Form>
               </div>

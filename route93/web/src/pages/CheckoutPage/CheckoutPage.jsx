@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, routes, navigate } from '@redwoodjs/router'
 import { Metadata } from '@redwoodjs/web'
-import { useMutation } from '@redwoodjs/web'
+import { useMutation, useQuery } from '@redwoodjs/web'
 import { toast } from '@redwoodjs/web/toast'
 import { useCart } from 'src/contexts/CartContext'
 import { useAuth } from 'src/auth'
@@ -61,11 +61,39 @@ const RECORD_FAILED_PAYMENT_MUTATION = gql`
   }
 `
 
+// Fetch current user's addresses (default first)
+const CURRENT_USER_ADDRESSES = gql`
+  query CurrentUserAddresses {
+    currentUser {
+      id
+      email
+      name
+      phone
+      addresses {
+        id
+        firstName
+        lastName
+        company
+        address1
+        address2
+        city
+        state
+        zipCode
+        country
+        phone
+        isDefault
+        createdAt
+      }
+    }
+  }
+`
+
 const CheckoutForm = () => {
   const stripe = useStripe()
   const elements = useElements()
   const { items, getCartTotal, clearCart } = useCart()
   const { currentUser } = useAuth()
+  const { data: currentUserData } = useQuery(CURRENT_USER_ADDRESSES)
   
   const [createPaymentIntent] = useMutation(CREATE_PAYMENT_INTENT_MUTATION)
   const [createOrder] = useMutation(CREATE_ORDER_MUTATION)
@@ -80,18 +108,58 @@ const CheckoutForm = () => {
   const [walletSupport, setWalletSupport] = useState(null)
   
   // Form states
-  const [shippingAddress, setShippingAddress] = useState({
-    firstName: currentUser?.name?.split(' ')[0] || '',
-    lastName: currentUser?.name?.split(' ')[1] || '',
-    email: currentUser?.email || '',
-    phone: '',
-    address1: '',
-    address2: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: 'IE'
+  const [shippingAddress, setShippingAddress] = useState(() => {
+    const defaultAddr = currentUser?.addresses?.find?.(a => a.isDefault) || currentUser?.addresses?.[0]
+    return {
+      firstName: currentUser?.name?.split(' ')[0] || '',
+      lastName: currentUser?.name?.split(' ')[1] || '',
+      email: currentUser?.email || '',
+      phone: currentUser?.phone || defaultAddr?.phone || '',
+      address1: defaultAddr?.address1 || '',
+      address2: defaultAddr?.address2 || '',
+      city: defaultAddr?.city || '',
+      state: defaultAddr?.state || '',
+      zipCode: defaultAddr?.zipCode || '',
+      country: defaultAddr?.country || 'IE'
+    }
   })
+
+  // If currentUser updates (e.g., after setting default), refresh prefill once
+  useEffect(() => {
+    const defaultAddr = currentUser?.addresses?.find?.(a => a.isDefault) || currentUser?.addresses?.[0]
+    if (defaultAddr) {
+      setShippingAddress((prev) => ({
+        ...prev,
+        phone: prev.phone || defaultAddr.phone || '',
+        address1: prev.address1 || defaultAddr.address1 || '',
+        address2: prev.address2 || defaultAddr.address2 || '',
+        city: prev.city || defaultAddr.city || '',
+        state: prev.state || defaultAddr.state || '',
+        zipCode: prev.zipCode || defaultAddr.zipCode || '',
+        country: prev.country || defaultAddr.country || 'IE'
+      }))
+    }
+  }, [currentUser])
+
+  // Prefill once addresses load from GraphQL (default first)
+  useEffect(() => {
+    const user = currentUserData?.currentUser
+    const defaultAddr = user?.addresses?.find?.(a => a.isDefault) || user?.addresses?.[0]
+    if (defaultAddr && (!shippingAddress?.address1 || shippingAddress.address1.trim() === '')) {
+      setShippingAddress({
+        firstName: user?.name?.split(' ')[0] || defaultAddr.firstName || '',
+        lastName: user?.name?.split(' ')[1] || defaultAddr.lastName || '',
+        email: user?.email || '',
+        phone: user?.phone || defaultAddr.phone || '',
+        address1: defaultAddr.address1 || '',
+        address2: defaultAddr.address2 || '',
+        city: defaultAddr.city || '',
+        state: defaultAddr.state || '',
+        zipCode: defaultAddr.zipCode || '',
+        country: defaultAddr.country || 'IE'
+      })
+    }
+  }, [currentUserData])
   
   const [billingAddress, setBillingAddress] = useState({
     firstName: '',

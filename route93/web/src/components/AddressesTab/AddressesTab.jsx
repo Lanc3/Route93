@@ -35,6 +35,12 @@ const AddressesTab = ({ user, onRefresh }) => {
     setShowForm(true)
   }
 
+  const handleUseAtCheckout = (address) => {
+    // Open edit form with isDefault true; AddressForm submit will set default via update
+    setEditingAddress({ ...address, isDefault: true })
+    setShowForm(true)
+  }
+
   const handleDelete = (addressId) => {
     if (confirm('Are you sure you want to delete this address?')) {
       deleteAddress({ variables: { id: addressId } })
@@ -162,6 +168,15 @@ const AddressesTab = ({ user, onRefresh }) => {
                 </div>
                 
                 <div className="flex items-center space-x-2 ml-4">
+                  {!address.isDefault && (
+                    <button
+                      onClick={() => handleUseAtCheckout(address)}
+                      className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                      title="Use this at checkout"
+                    >
+                      Use at checkout
+                    </button>
+                  )}
                   <button
                     onClick={() => handleEdit(address)}
                     className="p-2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded"

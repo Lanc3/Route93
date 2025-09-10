@@ -1,4 +1,5 @@
 import { db } from 'src/lib/db'
+import { sendVerificationEmail } from 'src/services/emails/emails'
 import { requireAuth } from 'src/lib/auth'
 import { context } from '@redwoodjs/graphql-server'
 
@@ -150,7 +151,10 @@ export const currentUser = () => {
         },
       },
       addresses: {
-        orderBy: { createdAt: 'desc' },
+        orderBy: [
+          { isDefault: 'desc' },
+          { createdAt: 'desc' },
+        ],
       },
     },
   })
@@ -206,6 +210,36 @@ export const deleteUser = ({ id }) => {
   return db.user.delete({
     where: { id },
   })
+}
+
+export const verifyEmail = async ({ token }) => {
+  const user = await db.user.findFirst({ where: { verificationToken: token } })
+  if (!user) return false
+  await db.user.update({ where: { id: user.id }, data: { emailVerifiedAt: new Date(), verificationToken: null } })
+  return true
+}
+
+export const resendVerification = async () => {
+  requireAuth()
+  const { currentUser } = context
+  if (!currentUser) throw new Error('Not authenticated')
+  await sendVerificationEmail({ userId: currentUser.id })
+  return true
+}
+
+export const resendVerificationByEmail = async ({ email }) => {
+  // Allow unauthenticated users to request resend by providing email
+  const user = await db.user.findUnique({ where: { email } })
+  if (!user) {
+    // Do not reveal whether the email exists
+    return true
+  }
+  // Only resend if not already verified
+  if (user.emailVerifiedAt) {
+    return true
+  }
+  await sendVerificationEmail({ userId: user.id })
+  return true
 }
 
 // No custom resolvers needed when using include in the main query

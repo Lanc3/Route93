@@ -67,6 +67,7 @@ const Routes = () => {
         <Route path="/about" page={AboutPage} name="about" />
         <Route path="/contact" page={ContactPage} name="contact" />
         <Route path="/login" page={LoginPage} name="login" />
+        <Route path="/verify-email" page={VerifyEmailPage} name="verifyEmail" />
         <Route path="/checkout" page={CheckoutPage} name="checkout" />
         <Route path="/collections" page={CollectionsPage} name="collections" />
         <Route path="/product/{slug:String}" page={ProductPage} name="product" />

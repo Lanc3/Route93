@@ -1,6 +1,7 @@
 import { db } from 'src/lib/db'
 import { logger } from 'src/lib/logger'
 import { sendEmail, sendEmailDirect } from 'src/lib/email'
+import crypto from 'crypto'
 
 export const emails = () => {
   return db.email.findMany()
@@ -554,6 +555,23 @@ Need help? Contact our support team at aaron@route93.ie
     logger.error({ to, template, error: error.message }, 'Test email failed')
     throw error
   }
+}
+
+export const sendVerificationEmail = async ({ userId }) => {
+  const user = await db.user.findUnique({ where: { id: userId } })
+  if (!user) throw new Error('User not found')
+  const token = crypto.randomBytes(20).toString('hex')
+  await db.user.update({ where: { id: userId }, data: { verificationToken: token } })
+  const verifyUrl = `${process.env.REDWOOD_WEB_URL}/verify-email?token=${token}`
+  const html = `<!DOCTYPE html><html><body style="font-family: Arial, sans-serif;">
+    <h2>Verify your email</h2>
+    <p>Hi ${user.name || ''}, please verify your email to activate your account.</p>
+    <p><a href="${verifyUrl}" style="display:inline-block;background:#7c3aed;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">Verify Email</a></p>
+    <p>Or copy this link: ${verifyUrl}</p>
+  </body></html>`
+  const text = `Verify your email: ${verifyUrl}`
+  await sendEmailDirect({ to: user.email, subject: 'Verify your email - Route93', html, text })
+  return true
 }
 
 // Review request email (simple)
