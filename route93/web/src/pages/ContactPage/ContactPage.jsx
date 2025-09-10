@@ -1,13 +1,22 @@
 import { useState } from 'react'
+import { useMutation } from '@redwoodjs/web'
+import { toast } from '@redwoodjs/web/toast'
 import { Link, routes } from '@redwoodjs/router'
 import { Metadata } from '@redwoodjs/web'
+
+const SEND_CONTACT = gql`
+  mutation SendContact($name: String!, $email: String!, $subject: String!, $message: String!) {
+    sendContactMessage(name: $name, email: $email, subject: $subject, message: $message)
+  }
+`
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     subject: '',
-    message: ''
+    message: '',
+    company: '' // honeypot
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState(null)
@@ -20,16 +29,31 @@ const ContactPage = () => {
     }))
   }
 
+  const [sendContact, { loading }] = useMutation(SEND_CONTACT)
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
-    // Simulate form submission
-    setTimeout(() => {
+    // Honeypot check
+    if (formData.company && formData.company.trim() !== '') {
+      // Pretend success for bots
       setSubmitStatus('success')
       setIsSubmitting(false)
-      setFormData({ name: '', email: '', subject: '', message: '' })
-    }, 1000)
+      setFormData({ name: '', email: '', subject: '', message: '', company: '' })
+      return
+    }
+    try {
+      const { name, email, subject, message } = formData
+      await sendContact({ variables: { name, email, subject, message } })
+      setSubmitStatus('success')
+      toast.success('Message sent! We will reply shortly.')
+      setFormData({ name: '', email: '', subject: '', message: '', company: '' })
+    } catch (err) {
+      toast.error('Failed to send message. Please try again later.')
+      setSubmitStatus('error')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -153,6 +177,19 @@ const ContactPage = () => {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Honeypot field (hidden from users) */}
+                  <div style={{ position: 'absolute', left: '-9999px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden' }} aria-hidden="true">
+                    <label htmlFor="company">Company</label>
+                    <input
+                      type="text"
+                      id="company"
+                      name="company"
+                      value={formData.company}
+                      onChange={handleInputChange}
+                      autoComplete="off"
+                      tabIndex={-1}
+                    />
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -226,7 +263,7 @@ const ContactPage = () => {
                   
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || loading}
                     className={`w-full btn-primary text-lg py-4 ${
                       isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
                     }`}

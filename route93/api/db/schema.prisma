@@ -612,3 +612,19 @@ model Design {
 
   @@map("designs")
 }
+
+// Contact messages for rate limiting and audit
+model ContactSubmission {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String
+  subject    String
+  message    String
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([ipAddress, createdAt])
+  @@map("contact_submissions")
+}

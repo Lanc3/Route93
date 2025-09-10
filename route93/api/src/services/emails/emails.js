@@ -1,4 +1,5 @@
 import { db } from 'src/lib/db'
+import { context } from '@redwoodjs/graphql-server'
 import { logger } from 'src/lib/logger'
 import { sendEmail, sendEmailDirect } from 'src/lib/email'
 import crypto from 'crypto'
@@ -571,6 +572,62 @@ export const sendVerificationEmail = async ({ userId }) => {
   </body></html>`
   const text = `Verify your email: ${verifyUrl}`
   await sendEmailDirect({ to: user.email, subject: 'Verify your email - Route93', html, text })
+  return true
+}
+
+// Public contact form handler
+export const sendContactMessage = async ({ name, email, subject, message }) => {
+  // Basic validation and sanitization
+  const safeName = String(name || '').slice(0, 200)
+  const safeEmail = String(email || '').slice(0, 200)
+  const safeSubject = String(subject || '').slice(0, 200)
+  const safeMessage = String(message || '').slice(0, 5000)
+
+  if (!safeName || !safeEmail || !safeSubject || !safeMessage) {
+    throw new Error('All fields are required')
+  }
+
+  const to = process.env.CONTACT_EMAIL_TO || process.env.ADMIN_EMAIL || 'aaron@route93.ie'
+  const html = `<!DOCTYPE html><html><body style="font-family: Arial, sans-serif;">
+    <h2>New Contact Message</h2>
+    <p><strong>From:</strong> ${safeName} &lt;${safeEmail}&gt;</p>
+    <p><strong>Subject:</strong> ${safeSubject}</p>
+    <hr/>
+    <p style="white-space: pre-wrap;">${safeMessage.replace(/</g, '&lt;')}</p>
+  </body></html>`
+  const text = `New contact message\nFrom: ${safeName} <${safeEmail}>\nSubject: ${safeSubject}\n\n${safeMessage}`
+
+  // Derive requester metadata
+  const ip = context?.event?.headers?.['x-forwarded-for'] || context?.event?.requestContext?.identity?.sourceIp || null
+  const userAgent = context?.event?.headers?.['user-agent'] || null
+
+  // Basic rate limits
+  const windowMinutes = parseInt(process.env.CONTACT_RATE_WINDOW_MIN || '10', 10)
+  const maxPerEmail = parseInt(process.env.CONTACT_RATE_MAX_PER_EMAIL || '3', 10)
+  const maxPerIp = parseInt(process.env.CONTACT_RATE_MAX_PER_IP || '10', 10)
+  const since = new Date(Date.now() - windowMinutes * 60 * 1000)
+
+  const [emailCount, ipCount] = await Promise.all([
+    db.contactSubmission.count({ where: { email: safeEmail, createdAt: { gte: since } } }),
+    ip ? db.contactSubmission.count({ where: { ipAddress: ip, createdAt: { gte: since } } }) : Promise.resolve(0)
+  ])
+
+  if (emailCount >= maxPerEmail || ipCount >= maxPerIp) {
+    // Silently accept to avoid leaking rate limit details
+    return true
+  }
+
+  // Record submission
+  await db.contactSubmission.create({ data: {
+    name: safeName,
+    email: safeEmail,
+    subject: safeSubject,
+    message: safeMessage,
+    ipAddress: ip || undefined,
+    userAgent: userAgent || undefined,
+  }})
+
+  await sendEmailDirect({ to, subject: `Contact: ${safeSubject}`, html, text, priority: 'normal' })
   return true
 }
 

@@ -51,5 +51,8 @@ export const schema = gql`
     
     # Test email sending
     sendTestEmail(to: String!): Boolean! @requireAuth(roles: ["ADMIN"])
+
+    # Public contact form submission
+    sendContactMessage(name: String!, email: String!, subject: String!, message: String!): Boolean! @skipAuth
   }
 `
