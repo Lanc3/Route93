@@ -339,9 +339,30 @@ export const updateProduct = ({ id, input }) => {
 }
 
 export const deleteProduct = ({ id }) => {
-  return db.product.delete({
-    where: { id },
-  })
+  return db.product
+    .delete({
+      where: { id },
+    })
+    .catch(async (error) => {
+      // If the product is referenced by order items (historical orders), fall back to soft delete
+      const message = String(error?.message || '')
+      const isFkViolation =
+        message.includes('Foreign key constraint violated') ||
+        message.includes('order_items_productId_fkey')
+
+      if (!isFkViolation) {
+        throw error
+      }
+
+      // Soft-delete: mark as INACTIVE and make it non-purchasable
+      return db.product.update({
+        where: { id },
+        data: {
+          status: 'INACTIVE',
+          inventory: 0,
+        },
+      })
+    })
 }
 
 // Inventory-specific queries
