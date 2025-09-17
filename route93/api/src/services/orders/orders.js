@@ -1,5 +1,6 @@
 import { db } from 'src/lib/db'
 import { requireAuth } from 'src/lib/auth'
+import { context } from '@redwoodjs/graphql-server'
 import { sendOrderConfirmationEmailById } from 'src/services/emails/emails'
 
 export const orders = async ({
@@ -271,7 +272,7 @@ export const createOrder = async ({ input }) => {
       }
     }
 
-    const order = await db.order.create({
+    let order = await db.order.create({
       data: finalOrderData,
       include: {
         user: {
@@ -306,6 +307,114 @@ export const createOrder = async ({ input }) => {
         payments: true
       }
     })
+
+    // Handle print cart items → create PrintOrder and PrintOrderItems
+    const userId = orderData.userId
+    const printCartItems = await db.printCartItem.findMany({
+      where: { userId },
+      include: { printableItem: true, design: true },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    if (printCartItems.length > 0) {
+      // Ensure backing product exists for each printable item
+      const ensureBackingProductForPrintable = async (printableItem) => {
+        const slug = `printable-${printableItem.id}`
+        let product = await db.product.findFirst({ where: { slug } })
+        if (!product) {
+          product = await db.product.create({
+            data: {
+              name: printableItem.name,
+              description: printableItem.description || `Printable product for ${printableItem.name}`,
+              price: printableItem.price || 0,
+              sku: `PRINTABLE-${printableItem.id}`,
+              slug,
+              status: 'ACTIVE',
+              inventory: 999999,
+              images: printableItem.imageUrl || null,
+            }
+          })
+        }
+        return product
+      }
+
+      // Create PrintOrder for the created order
+      const printOrder = await db.printOrder.create({
+        data: {
+          orderId: order.id,
+          status: 'REVIEW',
+        },
+      })
+
+      // For each print cart item, link to existing OrderItem if present in input, otherwise create one; then create PrintOrderItem
+      for (const pci of printCartItems) {
+        // Try to find a matching order item already created from input
+        let createdOrderItem = await db.orderItem.findFirst({
+          where: {
+            orderId: order.id,
+            printableItemId: pci.printableItemId,
+            OR: [
+              { designId: pci.designPublicId || undefined },
+              { designUrl: pci.designUrl || undefined },
+            ],
+          },
+        })
+
+        if (!createdOrderItem) {
+          const product = await ensureBackingProductForPrintable(pci.printableItem)
+          createdOrderItem = await db.orderItem.create({
+            data: {
+              orderId: order.id,
+              productId: product.id,
+              quantity: pci.quantity,
+              price: pci.basePrice ?? (pci.printableItem.price || 0),
+              totalPrice:
+                (pci.basePrice ?? (pci.printableItem.price || 0)) * pci.quantity +
+                (pci.printFee || 0) * pci.quantity,
+              designUrl: pci.designUrl || null,
+              designId: pci.designPublicId || null,
+              printFee: pci.printFee || 0,
+              printableItemId: pci.printableItemId,
+            },
+          })
+        }
+
+        await db.printOrderItem.create({
+          data: {
+            printOrderId: printOrder.id,
+            orderItemId: createdOrderItem.id,
+            printableItemId: pci.printableItemId,
+            designId: pci.designId || null,
+            designPublicId: pci.designPublicId || null,
+            designUrl: pci.designUrl || null,
+            quantity: pci.quantity,
+            unitPrice: pci.basePrice ?? (pci.printableItem.price || 0),
+            printFee: pci.printFee || 0,
+            totalPrice: (pci.basePrice ?? (pci.printableItem.price || 0)) * pci.quantity + (pci.printFee || 0) * pci.quantity,
+          },
+        })
+      }
+
+      // Clear user's print cart after creating order
+      await db.printCartItem.deleteMany({ where: { userId } })
+
+      // Re-fetch order including new items
+      order = await db.order.findUnique({
+        where: { id: order.id },
+        include: {
+          user: { select: { id: true, name: true, email: true, phone: true } },
+          shippingAddress: true,
+          billingAddress: true,
+          orderItems: {
+            include: {
+              product: { select: { id: true, name: true, images: true, price: true } },
+              printableItem: { select: { id: true, name: true, imageUrl: true } },
+            },
+          },
+          payments: true,
+        },
+      })
+    }
 
     return order
   } catch (error) {

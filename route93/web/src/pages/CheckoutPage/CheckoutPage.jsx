@@ -91,7 +91,7 @@ const CURRENT_USER_ADDRESSES = gql`
 const CheckoutForm = () => {
   const stripe = useStripe()
   const elements = useElements()
-  const { items, getCartTotal, clearCart } = useCart()
+  const { items, getCartTotal, getCartSubtotal, getDiscountAmount, clearCart } = useCart()
   const { currentUser } = useAuth()
   const { data: currentUserData } = useQuery(CURRENT_USER_ADDRESSES)
   
@@ -186,7 +186,8 @@ const CheckoutForm = () => {
   const subtotal = vatCalculation.totalNetPrice
   const vatAmount = vatCalculation.totalVatAmount + shippingVatCalc.vatAmount
   const shipping = shippingVatCalc.grossPrice
-  const total = subtotal + vatAmount + baseShipping
+  const discountAmount = getDiscountAmount()
+  const total = Math.max(0, subtotal - discountAmount) + vatAmount + baseShipping
 
   // Shipping ETA
   const [eta, setEta] = useState(null)
@@ -268,7 +269,9 @@ const CheckoutForm = () => {
                   phone: shippingAddress.phone,
                   isDefault: false
                 },
-                orderItems: items.map(item => {
+                orderItems: items
+                  .filter((item) => item.__type !== 'print')
+                  .map(item => {
                   const isCustomPrint = !!(item.printableItemId && (item.designId || item.designUrl))
                   const baseProductPrice = item.product.salePrice || item.product.price
                   const printableItemPrice = item.printableItem?.price
@@ -284,7 +287,7 @@ const CheckoutForm = () => {
                     printFee: item.printFee,
                     printableItemId: item.printableItemId
                   }
-                })
+                  })
               }
               const { data: orderData } = await createOrder({ variables: { input: orderInput } })
 
@@ -414,7 +417,9 @@ const CheckoutForm = () => {
           phone: shippingAddress.phone,
           isDefault: false
         },
-        orderItems: items.map(item => {
+        orderItems: items
+          .filter((item) => item.__type !== 'print')
+          .map(item => {
           const isCustomPrint = !!(item.printableItemId && (item.designId || item.designUrl))
           const baseProductPrice = item.product.salePrice || item.product.price
           const printableItemPrice = item.printableItem?.price
@@ -991,7 +996,7 @@ const CheckoutForm = () => {
                               <div className="text-xs text-purple-600">Custom Print + €{item.printFee}</div>
                               <div className="text-sm text-gray-500">Qty: {item.quantity}</div>
                             </div>
-                            <div className="font-medium">{formatPrice((price + item.printFee) * item.quantity)}</div>
+                            <div className="font-medium">{formatPrice((price) * item.quantity)}</div>
                           </div>
                         )
                       })}
@@ -1006,6 +1011,12 @@ const CheckoutForm = () => {
                   <span className="text-gray-600">Subtotal (ex VAT)</span>
                   <span className="font-medium">{formatPrice(subtotal)}</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-green-700">
+                    <span>Discount</span>
+                    <span>-{formatPrice(discountAmount)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Shipping (ex VAT)</span>
                   <span className="font-medium">{formatPrice(baseShipping)}</span>

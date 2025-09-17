@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, routes } from '@redwoodjs/router'
 import { useMutation } from '@redwoodjs/web'
+import JsBarcode from 'jsbarcode'
 import { toast } from '@redwoodjs/web/toast'
 
 const UPDATE_PRODUCT_INVENTORY = gql`
@@ -35,6 +36,7 @@ export const QUERY = gql`
       id
       name
       sku
+      barcode
       price
       salePrice
       inventory
@@ -109,6 +111,25 @@ export const Success = ({ inventoryProducts, inventoryStats, refetch }) => {
       toast.error('Error updating inventory: ' + error.message)
     }
   })
+
+  const GENERATE_BARCODE = gql`
+    mutation GenerateProductBarcode($id: Int!, $force: Boolean) {
+      generateProductBarcode(id: $id, force: $force) { id barcode }
+    }
+  `
+  const [generateProductBarcode] = useMutation(GENERATE_BARCODE)
+
+  const downloadBarcodePng = (barcodeValue, filename) => {
+    const canvas = document.createElement('canvas')
+    JsBarcode(canvas, barcodeValue, { format: 'CODE128', width: 2, height: 80, displayValue: true, margin: 6 })
+    const url = canvas.toDataURL('image/png')
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }
 
   const handleInventoryUpdate = (productId, newInventory) => {
     const inventory = parseInt(newInventory)
@@ -291,6 +312,29 @@ export const Success = ({ inventoryProducts, inventoryStats, refetch }) => {
                         title="Quick edit inventory"
                       >
                         🏷️
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try {
+                            let code = product.barcode
+                            if (!code) {
+                              const { data } = await generateProductBarcode({ variables: { id: product.id } })
+                              code = data?.generateProductBarcode?.barcode
+                            }
+                            if (!code) {
+                              toast.error('Failed to generate barcode')
+                              return
+                            }
+                            downloadBarcodePng(code, `barcode-${product.sku || product.id}.png`)
+                            toast.success('Barcode downloaded')
+                          } catch (e) {
+                            toast.error('Error generating barcode')
+                          }
+                        }}
+                        className="text-gray-700 hover:text-gray-900 p-1"
+                        title="Generate & download barcode"
+                      >
+                        🧾
                       </button>
                     </div>
                   </td>

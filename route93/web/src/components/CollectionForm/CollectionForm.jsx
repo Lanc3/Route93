@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import ImageUploader from 'src/components/ImageUploader/ImageUploader'
 import {
   Form,
   TextField,
@@ -17,6 +18,7 @@ const CollectionForm = ({ collection, onSave, error, loading }) => {
     image: '',
     isActive: true,
   })
+  const [uploadedImage, setUploadedImage] = useState(null)
 
   // Auto-generate slug from name
   const generateSlug = (name) => {
@@ -55,6 +57,7 @@ const CollectionForm = ({ collection, onSave, error, loading }) => {
         image: collection.image || '',
         isActive: collection.isActive !== undefined ? collection.isActive : true,
       })
+      setUploadedImage(collection.image ? { secureUrl: collection.image } : null)
     }
   }, [collection])
 
@@ -64,6 +67,7 @@ const CollectionForm = ({ collection, onSave, error, loading }) => {
       ...data,
       slug: formData.slug || generateSlug(data.name),
       isActive: data.isActive !== undefined ? data.isActive : true,
+      image: (uploadedImage?.secureUrl || data.image || '').trim() || null,
     }
     onSave(submitData)
   }
@@ -135,19 +139,23 @@ const CollectionForm = ({ collection, onSave, error, loading }) => {
                 <FieldError name="slug" className="text-red-600 text-sm mt-1" />
               </div>
 
-              {/* Image URL */}
+              {/* Image Uploader */}
               <div>
-                <TextField
-                  name="image"
-                  defaultValue={formData.image}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Collection Image URL
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Collection Image
                 </label>
+                <ImageUploader
+                  onUpload={(img) => {
+                    setUploadedImage(img)
+                    setFormData((prev) => ({ ...prev, image: img.secureUrl }))
+                  }}
+                  folder="collections"
+                  multiple={false}
+                  maxFiles={1}
+                  tags={['collections']}
+                />
                 <p className="text-xs text-gray-500 mt-1">
-                  Optional: Add an image URL for the collection banner
+                  Uploaded to Cloudinary folder: route93/collections
                 </p>
                 <FieldError name="image" className="text-red-600 text-sm mt-1" />
               </div>
@@ -192,14 +200,14 @@ const CollectionForm = ({ collection, onSave, error, loading }) => {
               </div>
 
               {/* Image Preview */}
-              {formData.image && (
+              {(formData.image || uploadedImage) && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Image Preview
                   </label>
                   <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                     <img
-                      src={formData.image}
+                      src={(uploadedImage?.secureUrl || formData.image) || ''}
                       alt="Collection preview"
                       className="w-full h-32 object-cover rounded-lg"
                       onError={(e) => {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useMutation, useQuery, gql, useLazyQuery } from '@apollo/client'
+import { useMutation, useLazyQuery, gql } from '@apollo/client'
 import { useCart } from 'src/contexts/CartContext'
 import { toast } from '@redwoodjs/web/toast'
 
@@ -51,12 +51,11 @@ const REMOVE_DISCOUNT_MUTATION = gql`
 const DiscountInput = ({ className = '', compact = false }) => {
   const [code, setCode] = useState('')
   const [isValidating, setIsValidating] = useState(false)
-  const [appliedDiscount, setAppliedDiscount] = useState(null)
-  const { getCartTotal } = useCart()
+  const { discount, applyDiscountCode, removeDiscount, getDiscountAmount } = useCart()
 
   const [validateDiscount] = useLazyQuery(VALIDATE_DISCOUNT_QUERY)
   const [applyDiscount] = useMutation(APPLY_DISCOUNT_MUTATION)
-  const [removeDiscount] = useMutation(REMOVE_DISCOUNT_MUTATION)
+  const [removeDiscountMutation] = useMutation(REMOVE_DISCOUNT_MUTATION)
 
   const handleValidateCode = async () => {
     if (!code.trim()) {
@@ -94,17 +93,13 @@ const DiscountInput = ({ className = '', compact = false }) => {
 
     setIsValidating(true)
     try {
-      const { data } = await applyDiscount({
-        variables: { code: code.trim().toUpperCase() }
-      })
-
+      const codeToApply = code.trim().toUpperCase()
+      const { data } = await applyDiscount({ variables: { code: codeToApply } })
       const result = data.applyDiscountToCart
-
       if (result.isValid) {
-        setAppliedDiscount(result.discountCode)
+        await applyDiscountCode(codeToApply)
         setCode('')
-        toast.success(`"${result.discountCode.name}" discount applied!`)
-        // In a full implementation, you'd update the cart context with the discount
+        toast.success(`"${result.discountCode.name}" discount applied! - Saved €${(result.discountAmount || 0).toFixed(2)}`)
       } else {
         toast.error(result.errorMessage || 'Unable to apply discount code')
       }
@@ -117,10 +112,9 @@ const DiscountInput = ({ className = '', compact = false }) => {
 
   const handleRemoveDiscount = async () => {
     try {
+      await removeDiscountMutation()
       await removeDiscount()
-      setAppliedDiscount(null)
       toast.success('Discount removed')
-      // In a full implementation, you'd update the cart context
     } catch (error) {
       toast.error('Error removing discount')
     }
@@ -135,7 +129,7 @@ const DiscountInput = ({ className = '', compact = false }) => {
   if (compact) {
     return (
       <div className={`space-y-2 ${className}`}>
-        {appliedDiscount ? (
+        {discount ? (
           <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-center space-x-2">
               <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -143,11 +137,12 @@ const DiscountInput = ({ className = '', compact = false }) => {
               </svg>
               <div>
                 <div className="text-sm font-medium text-green-800">
-                  {appliedDiscount.name}
+                  {discount.name}
                 </div>
                 <div className="text-xs text-green-600">
-                  Code: {appliedDiscount.code}
+                  Code: {discount.code}
                 </div>
+                <div className="text-xs text-green-700 mt-1">Saved: €{getDiscountAmount().toFixed(2)}</div>
               </div>
             </div>
             <button
@@ -184,10 +179,10 @@ const DiscountInput = ({ className = '', compact = false }) => {
   return (
     <div className={`bg-white rounded-lg shadow-sm border p-4 ${className}`}>
       <h3 className="text-lg font-medium text-gray-900 mb-4">
-        {appliedDiscount ? 'Applied Discount' : 'Discount Code'}
+        {discount ? 'Applied Discount' : 'Discount Code'}
       </h3>
 
-      {appliedDiscount ? (
+      {discount ? (
         <div className="space-y-4">
           <div className="flex items-start justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-start space-x-3">
@@ -198,21 +193,22 @@ const DiscountInput = ({ className = '', compact = false }) => {
               </div>
               <div>
                 <div className="text-sm font-medium text-green-800">
-                  {appliedDiscount.name}
+                  {discount.name}
                 </div>
                 <div className="text-sm text-green-600 mt-1">
-                  {appliedDiscount.description || `Code: ${appliedDiscount.code}`}
+                  Code: {discount.code}
                 </div>
-                {appliedDiscount.type === 'percentage' && (
+                {discount.type === 'percentage' && (
                   <div className="text-sm font-medium text-green-700 mt-2">
-                    {appliedDiscount.value}% off
+                    {discount.value}% off
                   </div>
                 )}
-                {appliedDiscount.type === 'fixed' && (
+                {discount.type === 'fixed' && (
                   <div className="text-sm font-medium text-green-700 mt-2">
-                    ${appliedDiscount.value} off
+                    €{discount.value} off
                   </div>
                 )}
+                <div className="text-sm text-green-700 mt-1">Saved: €{getDiscountAmount().toFixed(2)}</div>
               </div>
             </div>
             <button
@@ -225,7 +221,7 @@ const DiscountInput = ({ className = '', compact = false }) => {
 
           <div className="text-center">
             <button
-              onClick={() => setAppliedDiscount(null)}
+              onClick={() => setCode('')}
               className="text-sm text-purple-600 hover:text-purple-700 underline"
             >
               Apply a different code

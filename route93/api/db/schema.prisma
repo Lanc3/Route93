@@ -31,6 +31,7 @@ model User {
   mediaAssets         MediaAsset[]
   wishlists           Wishlist[]
   priceAlerts         PriceAlert[]
+  printCartItems      PrintCartItem[]
 
   @@map("users")
 }
@@ -74,6 +75,9 @@ model Product {
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
   categoryId  Int?
+  // Barcode fields for inventory labeling
+  barcode     String?             @unique
+  barcodeGeneratedAt DateTime?
   cartItems   CartItem[]
   orderItems  OrderItem[]
   collections ProductCollection[]
@@ -211,6 +215,7 @@ model Order {
   user              User        @relation(fields: [userId], references: [id])
   payments          Payment[]
   taxRecord         TaxRecord?
+  printOrder        PrintOrder?
 
   @@map("orders")
 }
@@ -232,6 +237,7 @@ model OrderItem {
   product         Product        @relation(fields: [productId], references: [id])
   variant         ProductVariant? @relation(fields: [variantId], references: [id])
   printableItem   PrintableItem? @relation(fields: [printableItemId], references: [id])
+  printOrderItem  PrintOrderItem?
 
   @@map("order_items")
 }
@@ -596,6 +602,8 @@ model PrintableItem {
   updatedAt   DateTime    @updatedAt
   orderItems  OrderItem[] // Order items that reference this printable item
   cartItems   CartItem[]  // Cart items that reference this printable item
+  printOrderItems PrintOrderItem[]
+  printCartItems  PrintCartItem[]
 
   @@map("printable_items")
 }
@@ -609,8 +617,68 @@ model Design {
   status      String   @default("ACTIVE") // ACTIVE, INACTIVE
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  printCartItems  PrintCartItem[]
+  printOrderItems PrintOrderItem[]
 
   @@map("designs")
+}
+
+model PrintCartItem {
+  id              Int           @id @default(autoincrement())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  userId          Int
+  printableItemId Int
+  designId        Int?
+  designPublicId  String?
+  designUrl       String?
+  quantity        Int           @default(1)
+  printFee        Float?        @default(0)
+  note            String?
+  basePrice       Float?
+  totalPrice      Float?
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  printableItem   PrintableItem @relation(fields: [printableItemId], references: [id])
+  design          Design?       @relation(fields: [designId], references: [id])
+
+  @@map("print_cart_items")
+}
+
+model PrintOrder {
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @unique
+  status    String   @default("REVIEW") // REVIEW, APPROVED, PRODUCTION, SHIPPED, CANCELED
+  proofUrl  String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  items     PrintOrderItem[]
+
+  @@map("print_orders")
+}
+
+model PrintOrderItem {
+  id              Int           @id @default(autoincrement())
+  printOrderId    Int
+  orderItemId     Int?          @unique
+  printableItemId Int
+  designId        Int?
+  designPublicId  String?
+  designUrl       String?
+  quantity        Int           @default(1)
+  unitPrice       Float
+  printFee        Float?        @default(0)
+  totalPrice      Float
+
+  printOrder      PrintOrder    @relation(fields: [printOrderId], references: [id], onDelete: Cascade)
+  orderItem       OrderItem?    @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+  printableItem   PrintableItem @relation(fields: [printableItemId], references: [id])
+  design          Design?       @relation(fields: [designId], references: [id])
+
+  @@map("print_order_items")
 }
 
 // Contact messages for rate limiting and audit

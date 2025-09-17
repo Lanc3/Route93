@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@redwoodjs/web'
 import { toast } from '@redwoodjs/web/toast'
 import { navigate, routes } from '@redwoodjs/router'
+import ImageUploader from 'src/components/ImageUploader/ImageUploader'
 
 const GET_PARENT_CATEGORIES = gql`
   query GetParentCategories {
@@ -45,6 +46,7 @@ const CategoryForm = ({ category = null, onSave, onCancel }) => {
 
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [uploadedImage, setUploadedImage] = useState(null)
 
   // Load parent categories
   const { data: categoriesData, loading: categoriesLoading } = useQuery(GET_PARENT_CATEGORIES)
@@ -84,6 +86,7 @@ const CategoryForm = ({ category = null, onSave, onCancel }) => {
         parentId: category.parentId?.toString() || '',
         image: category.image || '',
       })
+      setUploadedImage(category.image ? { secureUrl: category.image } : null)
     }
   }, [category])
 
@@ -138,7 +141,7 @@ const CategoryForm = ({ category = null, onSave, onCancel }) => {
       description: formData.description.trim() || null,
       slug: formData.slug.trim(),
       parentId: formData.parentId ? parseInt(formData.parentId) : null,
-      image: formData.image.trim() || null,
+      image: (uploadedImage?.secureUrl || formData.image.trim()) || null,
     }
 
     try {
@@ -266,33 +269,34 @@ const CategoryForm = ({ category = null, onSave, onCancel }) => {
           </div>
 
           <div>
-            <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-2">
-              Category Image (URL)
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Category Image
             </label>
-            <input
-              type="url"
-              id="image"
-              name="image"
-              value={formData.image}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder="https://example.com/category-image.jpg"
+            <ImageUploader
+              onUpload={(img) => {
+                setUploadedImage(img)
+                setFormData((prev) => ({ ...prev, image: img.secureUrl }))
+              }}
+              folder="category"
+              multiple={false}
+              maxFiles={1}
+              tags={['category']}
             />
             <p className="text-gray-500 text-sm mt-1">
-              Enter an image URL for the category, or leave empty for default placeholder.
+              Uploaded to Cloudinary folder: route93/category
             </p>
           </div>
         </div>
 
         {/* Preview */}
-        {(formData.name || formData.image) && (
+        {(formData.name || formData.image || uploadedImage) && (
           <div className="border border-gray-200 rounded-lg p-4">
             <h3 className="text-sm font-medium text-gray-700 mb-3">Preview</h3>
             <div className="flex items-center space-x-4">
               <div className="flex-shrink-0 h-16 w-16">
                 <img
                   className="h-16 w-16 rounded-lg object-cover bg-gray-100"
-                  src={formData.image || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zMiAyMEMxNy45IDIwIDEgMjguNyAxIDQwUzE3LjkgNjAgMzIgNjAgNjMgNTEuMyA2MyA0MCA0NS4xIDIwIDMyIDIwWk0zMiA1NkMxNy45IDU2IDEgNDguMyAxIDQwUzE3LjkgMjQgMzIgMjQgNjMgMzEuNyA2MyA0MCA0NS4xIDU2IDMyIDU2WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K'}
+                  src={(uploadedImage?.secureUrl || formData.image) || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zMiAyMEMxNy45IDIwIDEgMjguNyAxIDQwUzE3LjkgNjAgMzIgNjAgNjMgNTEuMyA2MyA0MCA0NS4xIDIwIDMyIDIwWk0zMiA1NkMxNy45IDU2IDEgNDguMyAxIDQwUzE3LjkgMjQgMzIgMjQgNjMgMzEuNyA2MyA0MCA0NS4xIDU2IDMyIDU2WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K'}
                   alt={formData.name || 'Category preview'}
                   onError={(e) => {
                     e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zMiAyMEMxNy45IDIwIDEgMjguNyAxIDQwUzE3LjkgNjAgMzIgNjAgNjMgNTEuMyA2MyA0MCA0NS4xIDIwIDMyIDIwWk0zMiA1NkMxNy45IDU2IDEgNDguMyAxIDQwUzE3LjkgMjQgMzIgMjQgNjMgMzEuNyA2MyA0MCA0NS4xIDU2IDMyIDU2WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K'

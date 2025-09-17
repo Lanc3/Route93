@@ -207,7 +207,13 @@ export const applyDiscountToCart = async ({ code }, { context }) => {
     include: { product: true }
   })
 
-  if (cartItems.length === 0) {
+  // Include print cart items as part of the cart for discount calculations
+  const printCartItems = await db.printCartItem.findMany({
+    where: { userId },
+    include: { printableItem: true }
+  })
+
+  if (cartItems.length === 0 && printCartItems.length === 0) {
     return {
       isValid: false,
       errorMessage: 'Your cart is empty',
@@ -244,10 +250,16 @@ export const applyDiscountToCart = async ({ code }, { context }) => {
     }
   }
 
-  // Calculate cart total
-  const cartTotal = cartItems.reduce((total, item) => {
+  // Calculate cart total (regular + print)
+  const regularTotal = cartItems.reduce((total, item) => {
     return total + (item.product.salePrice || item.product.price) * item.quantity
   }, 0)
+  const printTotal = printCartItems.reduce((total, pci) => {
+    const basePrice = (typeof pci.basePrice === 'number' ? pci.basePrice : (pci.printableItem?.price || 0))
+    const unit = basePrice + (pci.printFee || 0)
+    return total + unit * (pci.quantity || 1)
+  }, 0)
+  const cartTotal = regularTotal + printTotal
 
   // Check minimum order value
   if (discountCode.minOrderValue && cartTotal < discountCode.minOrderValue) {
@@ -259,10 +271,19 @@ export const applyDiscountToCart = async ({ code }, { context }) => {
     }
   }
 
-  // Check if discount applies to cart items
-  const applicableItems = getApplicableItems(cartItems, discountCode)
+  // Determine applicable totals
+  const applicableRegularItems = getApplicableItems(cartItems, discountCode)
+  const applicableRegularTotal = applicableRegularItems.reduce((sum, it) => sum + (it.product.salePrice || it.product.price) * it.quantity, 0)
+  const applicablePrintTotal = (discountCode.applicableTo === 'all')
+    ? printCartItems.reduce((sum, pci) => {
+        const basePrice = (typeof pci.basePrice === 'number' ? pci.basePrice : (pci.printableItem?.price || 0))
+        const unit = basePrice + (pci.printFee || 0)
+        return sum + unit * (pci.quantity || 1)
+      }, 0)
+    : 0
+  const applicableTotal = applicableRegularTotal + applicablePrintTotal
 
-  if (applicableItems.length === 0) {
+  if (applicableTotal <= 0) {
     return {
       isValid: false,
       errorMessage: 'No items in your cart qualify for this discount',
@@ -272,7 +293,7 @@ export const applyDiscountToCart = async ({ code }, { context }) => {
   }
 
   // Calculate discount amount
-  const discountAmount = calculateDiscountAmount(applicableItems, discountCode, cartTotal)
+  const discountAmount = calculateDiscountAmount(applicableTotal, discountCode)
 
   return {
     isValid: true,
@@ -491,13 +512,13 @@ function getApplicableItems(cartItems, discountCode) {
   return []
 }
 
-function calculateDiscountAmount(applicableItems, discountCode, cartTotal) {
+function calculateDiscountAmount(applicableTotal, discountCode) {
   switch (discountCode.type) {
     case 'fixed':
-      return Math.min(discountCode.value, cartTotal)
+      return Math.min(discountCode.value || 0, applicableTotal)
 
     case 'percentage':
-      const percentageDiscount = cartTotal * (discountCode.value / 100)
+      const percentageDiscount = applicableTotal * ((discountCode.value || 0) / 100)
       if (discountCode.maxDiscount) {
         return Math.min(percentageDiscount, discountCode.maxDiscount)
       }

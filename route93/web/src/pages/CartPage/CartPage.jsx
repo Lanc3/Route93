@@ -7,7 +7,7 @@ import CartRecommendations from 'src/components/CartRecommendations/CartRecommen
 import DiscountInput from 'src/components/DiscountInput/DiscountInput'
 
 const CartPage = () => {
-  const { items, updateQuantity, removeItem, getCartTotal, getCartCount, loading } = useCart()
+  const { items, updateQuantity, removeItem, getCartTotal, getCartSubtotal, getDiscountAmount, getCartCount, loading } = useCart()
   const { isAuthenticated } = useAuth()
   const [updatingItems, setUpdatingItems] = useState({})
 
@@ -348,8 +348,14 @@ const CartPage = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium">{formatPrice(getCartTotal())}</span>
+                    <span className="font-medium">{formatPrice(getCartSubtotal())}</span>
                   </div>
+                  {getDiscountAmount() > 0 && (
+                    <div className="flex justify-between text-green-700">
+                      <span>Discount</span>
+                      <span>-{formatPrice(getDiscountAmount())}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-gray-600">Shipping</span>
                     <span className="font-medium">Calculated at checkout</span>

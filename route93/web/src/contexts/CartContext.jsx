@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect } from 'react'
+import { createContext, useContext, useReducer, useEffect, useState } from 'react'
 import { useAuth } from 'src/auth'
 import { useMutation, useQuery } from '@redwoodjs/web'
 import { toast } from '@redwoodjs/web/toast'
@@ -207,7 +207,7 @@ const cartReducer = (state, action) => {
 // Initial state
 const initialState = {
   items: [],
-  loading: true
+  loading: true,
 }
 
 // Cart provider component
@@ -221,8 +221,113 @@ export const CartProvider = ({ children }) => {
   const [deleteCartItemDB] = useMutation(DELETE_CART_ITEM_MUTATION)
   const [syncCartDB] = useMutation(SYNC_CART_MUTATION)
 
+  // Print cart GraphQL operations
+  const ADD_TO_PRINT_CART_MUTATION = gql`
+    mutation AddToPrintCart($input: CreatePrintCartItemInput!) {
+      createPrintCartItem(input: $input) {
+        id
+        quantity
+        designUrl
+        designPublicId
+        printFee
+        printableItemId
+        basePrice
+        totalPrice
+        printableItem { id name imageUrl price }
+        design { id publicId imageUrl name }
+      }
+    }
+  `
+
+  const UPDATE_PRINT_CART_ITEM_MUTATION = gql`
+    mutation UpdatePrintCartItem($id: Int!, $input: UpdatePrintCartItemInput!) {
+      updatePrintCartItem(id: $id, input: $input) {
+        id
+        quantity
+        designUrl
+        designPublicId
+        printFee
+        printableItemId
+        basePrice
+        totalPrice
+        printableItem { id name imageUrl price }
+        design { id publicId imageUrl name }
+      }
+    }
+  `
+
+  const DELETE_PRINT_CART_ITEM_MUTATION = gql`
+    mutation DeletePrintCartItem($id: Int!) {
+      deletePrintCartItem(id: $id) { id }
+    }
+  `
+
+  const CLEAR_USER_PRINT_CART_MUTATION = gql`
+    mutation ClearUserPrintCart($userId: Int!) {
+      clearUserPrintCart(userId: $userId)
+    }
+  `
+
+  const CLEAR_USER_CART_MUTATION = gql`
+    mutation ClearUserCart($userId: Int!) {
+      clearUserCart(userId: $userId)
+    }
+  `
+
+  const LOAD_USER_PRINT_CART_QUERY = gql`
+    query LoadUserPrintCart($userId: Int!) {
+      userPrintCartItems(userId: $userId) {
+        id
+        quantity
+        designUrl
+        designPublicId
+        printFee
+        printableItemId
+        basePrice
+        totalPrice
+        printableItem { id name imageUrl price }
+        design { id publicId imageUrl name }
+      }
+    }
+  `
+
+  const [addToPrintCartDB] = useMutation(ADD_TO_PRINT_CART_MUTATION)
+  const [updatePrintCartItemDB] = useMutation(UPDATE_PRINT_CART_ITEM_MUTATION)
+  const [deletePrintCartItemDB] = useMutation(DELETE_PRINT_CART_ITEM_MUTATION)
+  const [clearUserPrintCartDB] = useMutation(CLEAR_USER_PRINT_CART_MUTATION)
+  const [clearUserCartDB] = useMutation(CLEAR_USER_CART_MUTATION)
+
+  // Discount state (reactive)
+  const [discount, setDiscount] = useState(null) // { code, name, type, value }
+  const [discountAmount, setDiscountAmount] = useState(0)
+
+  // Discount GraphQL operations
+  const APPLY_DISCOUNT_MUTATION = gql`
+    mutation ApplyDiscountToCartCtx($code: String!) {
+      applyDiscountToCart(code: $code) {
+        isValid
+        discountCode { id code name description type value minOrderValue maxDiscount }
+        errorMessage
+        discountAmount
+        finalTotal
+      }
+    }
+  `
+
+  const REMOVE_DISCOUNT_MUTATION = gql`
+    mutation RemoveDiscountFromCartCtx { removeDiscountFromCart }
+  `
+
+  const [applyDiscountToCartDB] = useMutation(APPLY_DISCOUNT_MUTATION)
+  const [removeDiscountFromCartDB] = useMutation(REMOVE_DISCOUNT_MUTATION)
+
   // Query to load existing cart items
   const { data: userCartData, loading: cartLoading } = useQuery(LOAD_USER_CART_QUERY, {
+    variables: { userId: currentUser?.id },
+    skip: !isAuthenticated || !currentUser,
+  })
+
+  const { data: userPrintCartData, loading: printCartLoading } = useQuery(LOAD_USER_PRINT_CART_QUERY, {
     variables: { userId: currentUser?.id },
     skip: !isAuthenticated || !currentUser,
   })
@@ -238,12 +343,57 @@ export const CartProvider = ({ children }) => {
     loadCart()
   }, [isAuthenticated, currentUser])
 
-  // Handle cart data from database query
+  // Load persisted discount code
   useEffect(() => {
-    if (userCartData?.userCartItems && !cartLoading) {
-      dispatch({ type: CART_ACTIONS.LOAD_CART, payload: userCartData.userCartItems })
+    try {
+      const stored = JSON.parse(localStorage.getItem('route93_discount') || 'null')
+      if (stored?.code) {
+        setDiscount({ code: stored.code, name: stored.name, type: stored.type, value: stored.value })
+        setDiscountAmount(stored.amount || 0)
+        // Re-apply once user is authenticated and items loaded later for accurate totals
+        setTimeout(() => applyDiscountCode(stored.code), 0)
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Handle cart data from database queries (regular + print)
+  useEffect(() => {
+    if (!cartLoading && !printCartLoading) {
+      const regular = userCartData?.userCartItems || []
+      const print = (userPrintCartData?.userPrintCartItems || []).map((pci) => ({
+        __type: 'print',
+        id: pci.id,
+        quantity: pci.quantity,
+        designUrl: pci.designUrl,
+        designId: pci.designPublicId, // keep legacy field name for UI keys
+        printFee: pci.printFee,
+        printableItemId: pci.printableItemId,
+        printableItem: pci.printableItem,
+        product: {
+          id: pci.printableItemId, // fallback id for UI keys
+          name: `${pci.printableItem?.name || 'Printable'} (Custom Print)`,
+          price: (pci.basePrice ?? pci.printableItem?.price ?? 0) + (pci.printFee || 0),
+          salePrice: null,
+          images: pci.printableItem?.imageUrl || null,
+          inventory: 999999,
+        }
+      }))
+      dispatch({ type: CART_ACTIONS.LOAD_CART, payload: [...regular, ...print] })
     }
-  }, [userCartData, cartLoading])
+  }, [userCartData, userPrintCartData, cartLoading, printCartLoading])
+
+  // Re-apply discount when items change (authenticated users)
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser) return
+    try {
+      const stored = JSON.parse(localStorage.getItem('route93_discount') || 'null')
+      if (stored?.code) {
+        applyDiscountCode(stored.code)
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.items.length])
 
   // Re-populate printable item data when it becomes available
   useEffect(() => {
@@ -387,32 +537,64 @@ export const CartProvider = ({ children }) => {
     dispatch({ type: CART_ACTIONS.ADD_ITEM, payload: cartItem })
 
     if (isAuthenticated && currentUser) {
-      // Save to database
       try {
-        const { data } = await addToCartDB({
-          variables: {
-            input: {
-              userId: currentUser.id,
-              productId: product.id,
-              quantity,
-              designUrl: designInfo?.designUrl,
-              designId: designInfo?.designId,
-              printFee: designInfo?.printFee,
-              printableItemId: designInfo?.printableItemId
+        // Route custom prints to print cart API
+        if (designInfo?.printableItemId) {
+          const { data } = await addToPrintCartDB({
+            variables: {
+              input: {
+                userId: currentUser.id,
+                printableItemId: designInfo.printableItemId,
+                quantity,
+                designUrl: designInfo.designUrl,
+                designPublicId: designInfo.designId,
+                printFee: designInfo.printFee,
+              }
+            }
+          })
+          const mapped = {
+            __type: 'print',
+            id: data.createPrintCartItem.id,
+            quantity: data.createPrintCartItem.quantity,
+            designUrl: data.createPrintCartItem.designUrl,
+            designId: data.createPrintCartItem.designPublicId,
+            printFee: data.createPrintCartItem.printFee,
+            printableItemId: data.createPrintCartItem.printableItemId,
+            printableItem: data.createPrintCartItem.printableItem,
+            product: {
+              id: data.createPrintCartItem.printableItemId,
+              name: `${data.createPrintCartItem.printableItem?.name || 'Printable'} (Custom Print)`,
+              price: (data.createPrintCartItem.basePrice ?? data.createPrintCartItem.printableItem?.price ?? 0) + (data.createPrintCartItem.printFee || 0),
+              salePrice: null,
+              images: data.createPrintCartItem.printableItem?.imageUrl || null,
+              inventory: 999999,
             }
           }
-        })
-        
-        // Update with real ID from database
-        // Replace temp item with DB item
-        dispatch({ type: CART_ACTIONS.REMOVE_ITEM, payload: { id: cartItem.id } })
-        dispatch({ type: CART_ACTIONS.ADD_ITEM, payload: data.createCartItem })
-        
-        toast.success(`${product.name} added to cart`)
+          dispatch({ type: CART_ACTIONS.REMOVE_ITEM, payload: { id: cartItem.id } })
+          dispatch({ type: CART_ACTIONS.ADD_ITEM, payload: mapped })
+          toast.success(`${product.name} added to cart`)
+        } else {
+          // Regular items
+          const { data } = await addToCartDB({
+            variables: {
+              input: {
+                userId: currentUser.id,
+                productId: product.id,
+                quantity,
+                designUrl: designInfo?.designUrl,
+                designId: designInfo?.designId,
+                printFee: designInfo?.printFee,
+                printableItemId: designInfo?.printableItemId
+              }
+            }
+          })
+          dispatch({ type: CART_ACTIONS.REMOVE_ITEM, payload: { id: cartItem.id } })
+          dispatch({ type: CART_ACTIONS.ADD_ITEM, payload: data.createCartItem })
+          toast.success(`${product.name} added to cart`)
+        }
       } catch (error) {
         console.error('Error adding item to cart:', error)
         toast.error('Failed to add item to cart')
-        // Revert local state change
         dispatch({ type: CART_ACTIONS.REMOVE_ITEM, payload: cartItem })
       }
     } else {
@@ -440,14 +622,16 @@ export const CartProvider = ({ children }) => {
     dispatch({ type: CART_ACTIONS.REMOVE_ITEM, payload: { id: itemId } })
 
     if (isAuthenticated && currentUser && typeof itemId === 'number') {
-      // Remove from database
       try {
-        await deleteCartItemDB({ variables: { id: itemId } })
+        if (item.__type === 'print') {
+          await deletePrintCartItemDB({ variables: { id: itemId } })
+        } else {
+          await deleteCartItemDB({ variables: { id: itemId } })
+        }
         toast.success('Item removed from cart')
       } catch (error) {
         console.error('Error removing item from cart:', error)
         toast.error('Failed to remove item from cart')
-        // Revert local state change
         dispatch({ type: CART_ACTIONS.ADD_ITEM, payload: item })
       }
     } else {
@@ -487,12 +671,11 @@ export const CartProvider = ({ children }) => {
       console.log('Item ID > 0 check:', itemId > 0)
 
       try {
-        await updateCartItemDB({
-          variables: {
-            id: itemId,
-            input: { quantity }
-          }
-        })
+        if (item.__type === 'print') {
+          await updatePrintCartItemDB({ variables: { id: itemId, input: { quantity } } })
+        } else {
+          await updateCartItemDB({ variables: { id: itemId, input: { quantity } } })
+        }
         console.log('Successfully updated cart item in database:', itemId)
       } catch (error) {
         console.error('Error updating item quantity:', error)
@@ -517,18 +700,69 @@ export const CartProvider = ({ children }) => {
   }
 
   // Clear entire cart
-  const clearCart = () => {
+  const clearCart = async () => {
     dispatch({ type: CART_ACTIONS.CLEAR_CART })
     localStorage.removeItem(CART_STORAGE_KEY)
     
     if (isAuthenticated && currentUser) {
-      // Clear database cart items would require a separate mutation
-      // For now, we'll handle this in the checkout process
+      try {
+        await Promise.all([
+          clearUserCartDB({ variables: { userId: currentUser.id } }),
+          clearUserPrintCartDB({ variables: { userId: currentUser.id } }),
+        ])
+      } catch (e) {
+        // Non-blocking
+        console.warn('Failed to clear server carts:', e)
+      }
+    }
+    // Clear discount
+    setDiscount(null)
+    setDiscountAmount(0)
+    localStorage.removeItem('route93_discount')
+  }
+
+  const getDiscountAmount = () => {
+    return discountAmount || 0
+  }
+
+  const applyDiscountCode = async (code) => {
+    if (!code || !isAuthenticated || !currentUser) return { ok: false }
+    try {
+      const { data } = await applyDiscountToCartDB({ variables: { code } })
+      const result = data?.applyDiscountToCart
+      if (result?.isValid) {
+        const discountPayload = {
+          code: result.discountCode.code,
+          name: result.discountCode.name,
+          type: result.discountCode.type,
+          value: result.discountCode.value,
+          amount: result.discountAmount
+        }
+        setDiscount({ code: discountPayload.code, name: discountPayload.name, type: discountPayload.type, value: discountPayload.value })
+        setDiscountAmount(discountPayload.amount || 0)
+        localStorage.setItem('route93_discount', JSON.stringify(discountPayload))
+        return { ok: true, discount: discountPayload }
+      }
+      return { ok: false, error: result?.errorMessage || 'Invalid discount' }
+    } catch (e) {
+      return { ok: false, error: e.message }
     }
   }
 
+  const removeDiscount = async () => {
+    try {
+      if (isAuthenticated && currentUser) {
+        await removeDiscountFromCartDB()
+      }
+    } catch {}
+    localStorage.removeItem('route93_discount')
+    setDiscount(null)
+    setDiscountAmount(0)
+    return true
+  }
+
   // Calculate cart totals
-  const getCartTotal = () => {
+  const getCartSubtotal = () => {
     return state.items.reduce((total, item) => {
       const basePrice = (item.printableItem && typeof item.printableItem.price === 'number')
         ? item.printableItem.price
@@ -536,6 +770,12 @@ export const CartProvider = ({ children }) => {
       const printFee = item.printFee || 0
       return total + ((basePrice + printFee) * item.quantity)
     }, 0)
+  }
+
+  const getCartTotal = () => {
+    const subtotal = getCartSubtotal()
+    const d = discountAmount || 0
+    return Math.max(0, subtotal - d)
   }
 
   const getCartCount = () => {
@@ -553,6 +793,12 @@ export const CartProvider = ({ children }) => {
     removeItem,
     updateQuantity,
     clearCart,
+    // Discounts
+    discount,
+    getDiscountAmount,
+    applyDiscountCode,
+    removeDiscount,
+    getCartSubtotal,
     getCartTotal,
     getCartCount,
     getCartWeight

@@ -24,6 +24,8 @@ export const schema = gql`
     inventory: Int!
     images: String
     tags: String
+    barcode: String
+    barcodeGeneratedAt: DateTime
     createdAt: DateTime!
     updatedAt: DateTime!
     category: Category
@@ -112,6 +114,7 @@ export const schema = gql`
     updateProduct(id: Int!, input: UpdateProductInput!): Product!
       @requireAuth(roles: ["ADMIN"])
     deleteProduct(id: Int!): Product! @requireAuth(roles: ["ADMIN"])
+    generateProductBarcode(id: Int!, force: Boolean): Product! @requireAuth(roles: ["ADMIN"])    
     
     # Inventory-specific mutations
     updateProductInventory(id: Int!, inventory: Int!): Product! @requireAuth(roles: ["ADMIN"])

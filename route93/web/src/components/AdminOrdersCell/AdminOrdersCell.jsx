@@ -1,5 +1,6 @@
 import { Link, routes } from '@redwoodjs/router'
-import { useMutation } from '@redwoodjs/web'
+import { useMutation, gql } from '@redwoodjs/web'
+import { useState } from 'react'
 import { toast } from '@redwoodjs/web/toast'
 
 const UPDATE_ORDER_STATUS = gql`
@@ -7,6 +8,14 @@ const UPDATE_ORDER_STATUS = gql`
     updateOrderStatus(id: $id, status: $status) {
       id
       status
+    }
+  }
+`
+
+const DELETE_ORDER = gql`
+  mutation DeleteOrder($id: Int!) {
+    deleteOrder(id: $id) {
+      id
     }
   }
 `
@@ -113,6 +122,73 @@ export const Success = ({ orders, ordersCount }) => {
     }
   })
 
+  const [deleteOrder] = useMutation(DELETE_ORDER, {
+    onCompleted: () => {
+      toast.success('Order deleted')
+      window.location.reload()
+    },
+    onError: (error) => {
+      toast.error('Error deleting order: ' + error.message)
+    }
+  })
+
+  // Silent variants for bulk actions (avoid reloading on each item)
+  const [updateOrderStatusSilent] = useMutation(UPDATE_ORDER_STATUS)
+  const [deleteOrderSilent] = useMutation(DELETE_ORDER)
+
+  const [selectedIds, setSelectedIds] = useState([])
+  const [bulkStatus, setBulkStatus] = useState('PENDING')
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false)
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const toggleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedIds(orders.map((o) => o.id))
+    } else {
+      setSelectedIds([])
+    }
+  }
+
+  const handleBulkStatusApply = async () => {
+    if (selectedIds.length === 0) return
+    setIsBulkProcessing(true)
+    try {
+      await Promise.allSettled(
+        selectedIds.map((id) =>
+          updateOrderStatusSilent({ variables: { id, status: bulkStatus } })
+        )
+      )
+      toast.success('Statuses updated')
+      window.location.reload()
+    } catch (e) {
+      toast.error('Failed to update some statuses')
+    } finally {
+      setIsBulkProcessing(false)
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return
+    if (!confirm(`Delete ${selectedIds.length} selected order(s)? This cannot be undone.`)) return
+    setIsBulkProcessing(true)
+    try {
+      await Promise.allSettled(
+        selectedIds.map((id) => deleteOrderSilent({ variables: { id } }))
+      )
+      toast.success('Selected orders deleted')
+      window.location.reload()
+    } catch (e) {
+      toast.error('Failed to delete some orders')
+    } finally {
+      setIsBulkProcessing(false)
+    }
+  }
+
   const handleStatusChange = (orderId, newStatus) => {
     updateOrderStatus({ variables: { id: orderId, status: newStatus } })
   }
@@ -155,6 +231,45 @@ export const Success = ({ orders, ordersCount }) => {
 
   return (
     <div className="space-y-6">
+      {/* Bulk actions toolbar */}
+      <div className="bg-white shadow-sm rounded-lg border p-4 flex items-center justify-between">
+        <div className="text-sm text-gray-700">
+          Selected: <span className="font-medium">{selectedIds.length}</span> / {ordersCount}
+        </div>
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
+            <label className="text-sm text-gray-700">Set status to</label>
+            <select
+              value={bulkStatus}
+              onChange={(e) => setBulkStatus(e.target.value)}
+              className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="PENDING">Pending</option>
+              <option value="CONFIRMED">Confirmed</option>
+              <option value="PROCESSING">Processing</option>
+              <option value="SHIPPED">Shipped</option>
+              <option value="DELIVERED">Delivered</option>
+              <option value="CANCELLED">Cancelled</option>
+              <option value="REFUNDED">Refunded</option>
+            </select>
+            <button
+              onClick={handleBulkStatusApply}
+              disabled={isBulkProcessing || selectedIds.length === 0}
+              className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+            >
+              Apply
+            </button>
+          </div>
+          <div className="border-l h-6 mx-1" />
+          <button
+            onClick={handleBulkDelete}
+            disabled={isBulkProcessing || selectedIds.length === 0}
+            className="px-3 py-1.5 text-sm text-white bg-red-600 rounded hover:bg-red-700 disabled:opacity-50"
+          >
+            Delete Selected
+          </button>
+        </div>
+      </div>
       {/* Orders Table */}
       <div className="bg-white shadow-sm rounded-lg border">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -167,6 +282,15 @@ export const Success = ({ orders, ordersCount }) => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-4 py-3">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 text-purple-600 border-gray-300 rounded"
+                    checked={selectedIds.length > 0 && selectedIds.length === orders.length}
+                    onChange={(e) => toggleSelectAll(e.target.checked)}
+                    aria-label="Select all"
+                  />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Order
                 </th>
@@ -198,6 +322,15 @@ export const Success = ({ orders, ordersCount }) => {
 
                 return (
                   <tr key={order.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 text-purple-600 border-gray-300 rounded"
+                        checked={selectedIds.includes(order.id)}
+                        onChange={() => toggleSelect(order.id)}
+                        aria-label={`Select order ${order.id}`}
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className='flex items-center space-x-2'>
                       <Link
@@ -349,6 +482,21 @@ export const Success = ({ orders, ordersCount }) => {
                             <option value="CANCELLED">Cancelled</option>
                             <option value="REFUNDED">Refunded</option>
                           </select>
+
+                          {/* Delete Order */}
+                          <button
+                            title="Delete order"
+                            onClick={() => {
+                              if (confirm(`Delete order #${order.orderNumber || order.id}? This cannot be undone.`)) {
+                                deleteOrder({ variables: { id: order.id } })
+                              }
+                            }}
+                            className="ml-2 inline-flex items-center text-red-600 hover:text-red-800"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
                         </div>
                       </div>
                     </td>

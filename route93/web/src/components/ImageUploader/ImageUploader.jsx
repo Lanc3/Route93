@@ -26,7 +26,8 @@ const ImageUploader = ({
   folder = 'products', 
   multiple = true,
   maxFiles = 10,
-  className = ''
+  className = '',
+  tags: customTags = null,
 }) => {
   const [uploading, setUploading] = useState(false)
   const [uploadedImages, setUploadedImages] = useState([])
@@ -69,7 +70,7 @@ const ImageUploader = ({
             file: base64File, 
             folder,
             altText: file.name.split('.')[0],
-            tags: [folder, 'product']
+            tags: customTags && Array.isArray(customTags) && customTags.length > 0 ? customTags : [folder, 'product']
           }
         })
       }

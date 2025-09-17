@@ -1,5 +1,6 @@
 import { Link, routes } from '@redwoodjs/router'
-import { useMutation } from '@redwoodjs/web'
+import { useMutation, gql } from '@redwoodjs/web'
+import { useState } from 'react'
 import { toast } from '@redwoodjs/web/toast'
 
 const DELETE_PRODUCT = gql`
@@ -89,6 +90,60 @@ export const Success = ({ products, productsCount }) => {
     }
   })
 
+  const UPDATE_PRODUCT = gql`
+    mutation UpdateProductStatusBulk($id: Int!, $input: UpdateProductInput!) {
+      updateProduct(id: $id, input: $input) { id status }
+    }
+  `
+
+  const [updateProductSilent] = useMutation(UPDATE_PRODUCT)
+
+  const [selectedIds, setSelectedIds] = useState([])
+  const [bulkStatus, setBulkStatus] = useState('ACTIVE')
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false)
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
+  }
+
+  const toggleSelectAll = (checked) => {
+    if (checked) setSelectedIds(products.map((p) => p.id))
+    else setSelectedIds([])
+  }
+
+  const handleBulkStatusApply = async () => {
+    if (selectedIds.length === 0) return
+    setIsBulkProcessing(true)
+    try {
+      await Promise.allSettled(
+        selectedIds.map((id) => updateProductSilent({ variables: { id, input: { status: bulkStatus } } }))
+      )
+      toast.success('Product statuses updated')
+      window.location.reload()
+    } catch (e) {
+      toast.error('Failed to update some products')
+    } finally {
+      setIsBulkProcessing(false)
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return
+    if (!confirm(`Delete ${selectedIds.length} selected product(s)? This cannot be undone.`)) return
+    setIsBulkProcessing(true)
+    try {
+      await Promise.allSettled(
+        selectedIds.map((id) => deleteProduct({ variables: { id } }))
+      )
+      toast.success('Selected products deleted')
+      window.location.reload()
+    } catch (e) {
+      toast.error('Failed to delete some products')
+    } finally {
+      setIsBulkProcessing(false)
+    }
+  }
+
   const handleDelete = (product) => {
     if (window.confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) {
       deleteProduct({ variables: { id: product.id } })
@@ -117,6 +172,41 @@ export const Success = ({ products, productsCount }) => {
 
   return (
     <div className="space-y-6">
+      {/* Bulk actions toolbar */}
+      <div className="bg-white shadow-sm rounded-lg border p-4 flex items-center justify-between">
+        <div className="text-sm text-gray-700">
+          Selected: <span className="font-medium">{selectedIds.length}</span> / {productsCount}
+        </div>
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
+            <label className="text-sm text-gray-700">Set status to</label>
+            <select
+              value={bulkStatus}
+              onChange={(e) => setBulkStatus(e.target.value)}
+              className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="OUT_OF_STOCK">Out of Stock</option>
+            </select>
+            <button
+              onClick={handleBulkStatusApply}
+              disabled={isBulkProcessing || selectedIds.length === 0}
+              className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+            >
+              Apply
+            </button>
+          </div>
+          <div className="border-l h-6 mx-1" />
+          <button
+            onClick={handleBulkDelete}
+            disabled={isBulkProcessing || selectedIds.length === 0}
+            className="px-3 py-1.5 text-sm text-white bg-red-600 rounded hover:bg-red-700 disabled:opacity-50"
+          >
+            Delete Selected
+          </button>
+        </div>
+      </div>
       {/* Products Table */}
       <div className="bg-white shadow-sm rounded-lg border">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -129,6 +219,15 @@ export const Success = ({ products, productsCount }) => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-4 py-3">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 text-purple-600 border-gray-300 rounded"
+                    checked={selectedIds.length > 0 && selectedIds.length === products.length}
+                    onChange={(e) => toggleSelectAll(e.target.checked)}
+                    aria-label="Select all"
+                  />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Product
                 </th>
@@ -174,6 +273,15 @@ export const Success = ({ products, productsCount }) => {
                 
                 return (
                   <tr key={product.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 text-purple-600 border-gray-300 rounded"
+                        checked={selectedIds.includes(product.id)}
+                        onChange={() => toggleSelect(product.id)}
+                        aria-label={`Select product ${product.id}`}
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-12 w-12">

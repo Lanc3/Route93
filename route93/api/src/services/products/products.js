@@ -365,6 +365,38 @@ export const deleteProduct = ({ id }) => {
     })
 }
 
+export const generateProductBarcode = async ({ id, force = false }) => {
+  requireAuth({ roles: ['ADMIN'] })
+  const product = await db.product.findUnique({ where: { id }, select: { id: true, sku: true, barcode: true } })
+  if (!product) throw new Error('Product not found')
+
+  if (product.barcode && !force) {
+    return db.product.update({ where: { id }, data: { barcodeGeneratedAt: new Date() } })
+  }
+
+  // Generate a unique barcode string based on SKU/ID with check digit
+  const base = product.sku?.replace(/[^A-Za-z0-9]/g, '').toUpperCase() || `P${String(product.id).padStart(8, '0')}`
+  const seed = Date.now().toString(36).toUpperCase().slice(-4)
+  const raw = `R93-${base}-${seed}`
+
+  let candidate = raw
+  let attempt = 0
+  while (attempt < 5) {
+    try {
+      return await db.product.update({
+        where: { id },
+        data: { barcode: candidate, barcodeGeneratedAt: new Date() },
+      })
+    } catch (e) {
+      // Unique violation -> try a new suffix
+      candidate = `${raw}-${Math.random().toString(36).toUpperCase().slice(-3)}`
+      attempt++
+    }
+  }
+
+  throw new Error('Failed to generate unique barcode, please retry')
+}
+
 // Inventory-specific queries
 export const inventoryProducts = async ({
   lowStockThreshold = 10,

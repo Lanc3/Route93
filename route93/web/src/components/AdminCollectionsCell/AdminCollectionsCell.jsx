@@ -116,6 +116,28 @@ export const Success = ({ collections, collectionsCount }) => {
     )
   }
 
+  const getProductImageUrl = (product) => {
+    const { images } = product || {}
+    if (!images) return null
+    if (Array.isArray(images)) {
+      return images[0] || null
+    }
+    if (typeof images === 'string') {
+      const trimmed = images.trim()
+      if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+        try {
+          const parsed = JSON.parse(trimmed)
+          if (Array.isArray(parsed)) return parsed[0] || null
+          if (parsed && typeof parsed === 'object') return parsed.secureUrl || parsed.url || null
+        } catch (_) {
+          // fall through to return the raw string
+        }
+      }
+      return trimmed
+    }
+    return null
+  }
+
   return (
     <div className="space-y-6">
       {/* Collections Table */}
@@ -192,12 +214,10 @@ export const Success = ({ collections, collectionsCount }) => {
                           {collection._count.products === 1 ? 'product' : 'products'}
                         </div>
                         {collection.products.length > 0 && (
-                          <div className="flex -space-x-1 mt-1">
+                          <div className="flex flex-wrap gap-1 mt-1">
                             {collection.products.slice(0, 3).map((productCollection, index) => {
                               const product = productCollection.product
-                              const productImage = product.images ? 
-                                (typeof product.images === 'string' ? product.images : product.images[0]) : 
-                                null
+                              const productImage = getProductImageUrl(product)
                               return (
                                 <div
                                   key={product.id}

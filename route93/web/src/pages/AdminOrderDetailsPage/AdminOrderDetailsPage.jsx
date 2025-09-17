@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useParams, Link, routes } from '@redwoodjs/router'
 import { useQuery, gql } from '@redwoodjs/web'
 
@@ -68,6 +69,22 @@ const AdminOrderDetailsPage = () => {
     fetchPolicy: 'network-only'
   })
 
+  const [showPrintModal, setShowPrintModal] = useState(false)
+  const [selectedPrint, setSelectedPrint] = useState(null)
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setShowPrintModal(false)
+        setSelectedPrint(null)
+      }
+    }
+    if (showPrintModal) {
+      window.addEventListener('keydown', onKeyDown)
+    }
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [showPrintModal])
+
   const handlePrintLabel = async () => {
     try {
       const res = await fetch(`/api/shippingLabel?orderId=${orderId}`)
@@ -130,7 +147,16 @@ const AdminOrderDetailsPage = () => {
                 }
                 const displayName = isCustomPrint ? item.printableItem.name : item.product.name
                 return (
-                  <div key={item.id} className={`flex items-center space-x-4 p-3 border rounded ${isCustomPrint ? 'bg-purple-50 border-purple-200' : ''}`}>
+                  <div
+                    key={item.id}
+                    className={`flex items-center space-x-4 p-3 border rounded ${isCustomPrint ? 'bg-purple-50 border-purple-200 cursor-pointer hover:bg-purple-100' : ''}`}
+                    onClick={() => {
+                      if (isCustomPrint) {
+                        setSelectedPrint(item)
+                        setShowPrintModal(true)
+                      }
+                    }}
+                  >
                     <div className="relative">
                       {isCustomPrint ? (
                         <div className="relative">
@@ -153,11 +179,11 @@ const AdminOrderDetailsPage = () => {
                       <div className="text-sm text-gray-600">Qty: {item.quantity}</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm text-gray-700">Unit: {formatPrice(item.price - item.printFee)}</div>
+                      <div className="text-sm text-gray-700">Unit: {formatPrice(item.price)}</div>
                       {item.printFee ? (
                         <div className="text-sm text-purple-700">Print Fee: {formatPrice(item.printFee)}</div>
                       ) : null}
-                      <div className="font-semibold">Total: {formatPrice(item.price)}</div>
+                      <div className="font-semibold">Total: {formatPrice(item.price + item.printFee)}</div>
                     </div>
                   </div>
                 )
@@ -223,6 +249,79 @@ const AdminOrderDetailsPage = () => {
           </div>
         </div>
       </div>
+      {/* Custom Print Detail Modal */}
+      {showPrintModal && selectedPrint && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center overflow-y-auto"
+          onClick={() => { setShowPrintModal(false); setSelectedPrint(null) }}
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg w-full max-w-5xl my-10 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <div className="text-lg font-semibold text-gray-900">Custom Print Details</div>
+              <button
+                className="text-gray-500 hover:text-gray-700"
+                onClick={() => { setShowPrintModal(false); setSelectedPrint(null) }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Images Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
+              <div>
+                <div className="text-sm font-medium text-gray-700 mb-2">Printable Item</div>
+                <div className="w-full h-80 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                  {selectedPrint.printableItem?.imageUrl ? (
+                    <img src={selectedPrint.printableItem.imageUrl} alt={selectedPrint.printableItem?.name || 'Printable Item'} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-gray-400">No image</div>
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="text-sm font-medium text-gray-700 mb-2">Design</div>
+                <div className="w-full h-80 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                  {selectedPrint.designUrl ? (
+                    <img src={selectedPrint.designUrl} alt={selectedPrint.designId || 'Design'} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-gray-400">No design image</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Details Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 pb-6">
+              <div className="space-y-1 text-sm">
+                <div className="text-gray-900 font-medium">{selectedPrint.printableItem?.name || 'Printable Item'}</div>
+                <div className="text-gray-700">Unit Price: {formatPrice(selectedPrint.price || 0)}</div>
+                {typeof selectedPrint.printFee === 'number' && (
+                  <div className="text-purple-700">Print Fee: {formatPrice(selectedPrint.printFee)}</div>
+                )}
+                <div className="text-gray-700">Quantity: {selectedPrint.quantity}</div>
+                <div className="text-gray-900 font-semibold">Line Total: {formatPrice((selectedPrint.price || 0) + (selectedPrint.printFee || 0))}</div>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="text-gray-900 font-medium">Design Details</div>
+                {selectedPrint.designId && (
+                  <div className="text-gray-700 break-all">Design ID: {selectedPrint.designId}</div>
+                )}
+                {selectedPrint.designUrl && (
+                  <div className="flex items-center space-x-3">
+                    <a className="btn-outline text-sm" href={selectedPrint.designUrl} target="_blank" rel="noreferrer">Open Design</a>
+                    <a className="text-purple-600 hover:text-purple-700 text-sm" href={selectedPrint.designUrl} download>Download</a>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
