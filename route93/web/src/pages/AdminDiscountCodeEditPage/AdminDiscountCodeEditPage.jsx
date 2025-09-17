@@ -182,8 +182,8 @@ const AdminDiscountCodeEditPage = () => {
         maxDiscount: formData.maxDiscount ? parseFloat(formData.maxDiscount) : null,
         usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : null,
         perCustomerLimit: formData.perCustomerLimit ? parseInt(formData.perCustomerLimit) : null,
-        startsAt: formData.startsAt && formData.startsAt.trim() ? formData.startsAt : null,
-        expiresAt: formData.expiresAt && formData.expiresAt.trim() ? formData.expiresAt : null,
+        startsAt: formData.startsAt && formData.startsAt.trim() ? new Date(formData.startsAt).toISOString() : null,
+        expiresAt: formData.expiresAt && formData.expiresAt.trim() ? new Date(formData.expiresAt).toISOString() : null,
         applicableTo: 'all', // For now, only support 'all'
         categoryIds: null,
         productIds: null
