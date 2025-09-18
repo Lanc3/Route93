@@ -5,7 +5,7 @@ const CollectionCard = ({ collection }) => {
 
   return (
     <div className="group relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-      <Link to={routes.products({ collection: collection.slug })}>
+      <Link to={routes.collection({ slug: collection.slug })}>
         <div className="relative overflow-hidden">
           <img
             src={imageUrl}

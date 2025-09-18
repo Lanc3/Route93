@@ -6,7 +6,7 @@
 # https://redwoodjs.com/docs/app-configuration-redwood-toml
 
 [web]
-  title = "Redwood App"
+  title = "Route93"
   port = 8913
   apiUrl = "/api"
   includeEnvironmentVariables = [

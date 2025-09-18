@@ -70,6 +70,7 @@ const Routes = () => {
         <Route path="/verify-email" page={VerifyEmailPage} name="verifyEmail" />
         <Route path="/checkout" page={CheckoutPage} name="checkout" />
         <Route path="/collections" page={CollectionsPage} name="collections" />
+        <Route path="/collections/{slug:String}" page={CollectionPage} name="collection" />
         <Route path="/product/{slug:String}" page={ProductPage} name="product" />
         <Route path="/products" page={ProductsPage} name="products" />
         <Route path="/wishlist" page={WishlistPage} name="wishlist" />

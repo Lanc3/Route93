@@ -30,6 +30,7 @@ export const schema = gql`
       isActive: Boolean
       search: String
     ): Int! @requireAuth(roles: ["ADMIN"])
+    collectionBySlug(slug: String!): Collection @skipAuth
   }
 
   input CreateCollectionInput {

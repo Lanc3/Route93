@@ -108,6 +108,32 @@ export const collection = ({ id }) => {
   })
 }
 
+export const collectionBySlug = ({ slug }) => {
+  return db.collection.findUnique({
+    where: { slug },
+    include: {
+      products: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              images: true,
+              price: true,
+              salePrice: true,
+              slug: true,
+              status: true,
+            },
+          },
+        },
+      },
+      _count: {
+        select: { products: true },
+      },
+    },
+  })
+}
+
 export const createCollection = ({ input }) => {
   requireAuth({ roles: ['ADMIN'] })
   return db.collection.create({
