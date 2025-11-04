@@ -9,6 +9,9 @@ const ProductCard = ({ product }) => {
   const images = parseProductImages(product.images)
   const primaryImage = images[0] || 'https://via.placeholder.com/400x400?text=No+Image'
   
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(amount)
+
   const displayPrice = product.salePrice || product.price
   const hasDiscount = product.salePrice && product.salePrice < product.price
   const discountPercent = hasDiscount ? Math.round(((product.price - product.salePrice) / product.price) * 100) : 0
@@ -78,11 +81,11 @@ const ProductCard = ({ product }) => {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-2">
             <span className="text-lg font-bold text-purple-600">
-              ${displayPrice}
+              {formatCurrency(displayPrice)}
             </span>
             {hasDiscount && (
               <span className="text-sm text-gray-500 line-through">
-                ${product.price}
+                {formatCurrency(product.price)}
               </span>
             )}
           </div>
