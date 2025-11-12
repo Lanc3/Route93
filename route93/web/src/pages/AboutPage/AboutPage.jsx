@@ -205,13 +205,13 @@ const AboutPage = () => {
                 {
                   name: 'Paul',
                   role: 'Founder & CEO',
-                  image: 'https://images.unsplash.com/photo-1494790108755-2616c4e6c3a6?w=300&h=300&fit=crop&q=80',
+                  image: '/images/logo.png',
                   bio: 'Visionary leader with 15+ years in e-commerce, passionate about customer experience and innovation.'
                 },
                 {
-                  name: 'Aaron',
+                  name: 'Aaron Keating',
                   role: 'CTO',
-                  image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&q=80',
+                  image: '/images/Aaron.jpeg',
                   bio: 'Technology expert focused on building scalable, secure platforms that enhance user experience.'
                 },
 

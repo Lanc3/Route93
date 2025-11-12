@@ -8,7 +8,7 @@ import { useAuth } from 'src/auth'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, CardElement, PaymentRequestButtonElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import AddressAutocomplete from 'src/components/AddressAutocomplete/AddressAutocomplete'
-import { formatPrice, calculateCartVat, calculateShippingVat } from 'src/lib/currency'
+import { formatPrice } from 'src/lib/currency'
 import { ALL_COUNTRIES } from 'src/lib/countries'
 
 // Initialize Stripe
@@ -91,7 +91,7 @@ const CURRENT_USER_ADDRESSES = gql`
 const CheckoutForm = () => {
   const stripe = useStripe()
   const elements = useElements()
-  const { items, getCartTotal, getCartSubtotal, getDiscountAmount, clearCart } = useCart()
+  const { items, getCartSubtotal, getDiscountAmount, clearCart } = useCart()
   const { currentUser } = useAuth()
   const { data: currentUserData } = useQuery(CURRENT_USER_ADDRESSES)
   
@@ -174,20 +174,14 @@ const CheckoutForm = () => {
   
   const [useSameAddress, setUseSameAddress] = useState(true)
   const [shippingMethod, setShippingMethod] = useState('standard')
-  
-  // VAT calculation based on customer location
+
   const customerCountry = shippingAddress.country || 'IE'
-  const vatCalculation = calculateCartVat(items, customerCountry)
-  
-  // Calculate totals with VAT
-  const baseShipping = shippingMethod === 'express' ? 15.99 : shippingMethod === 'overnight' ? 29.99 : 5.99
-  const shippingVatCalc = calculateShippingVat(baseShipping, vatCalculation.customerType)
-  
-  const subtotal = vatCalculation.totalNetPrice
-  const vatAmount = vatCalculation.totalVatAmount + shippingVatCalc.vatAmount
-  const shipping = shippingVatCalc.grossPrice
+  const baseShipping = shippingMethod === 'express' ? 15.99 : shippingMethod === 'overnight' ? 29.99 : 0
+  const subtotal = getCartSubtotal()
   const discountAmount = getDiscountAmount()
-  const total = Math.max(0, subtotal - discountAmount) + vatAmount + baseShipping
+  const discountedSubtotal = Math.max(0, subtotal - discountAmount)
+  const shipping = baseShipping
+  const total = discountedSubtotal + shipping
 
   // Shipping ETA
   const [eta, setEta] = useState(null)
@@ -255,7 +249,7 @@ const CheckoutForm = () => {
                 status: 'PENDING',
                 totalAmount: total,
                 shippingCost: shipping,
-                taxAmount: vatAmount,
+                taxAmount: 0,
                 shippingAddress: {
                   firstName: shippingAddress.firstName,
                   lastName: shippingAddress.lastName,
@@ -403,7 +397,7 @@ const CheckoutForm = () => {
         status: 'PENDING',
         totalAmount: total,
         shippingCost: shipping,
-        taxAmount: vatAmount,
+        taxAmount: 0,
         shippingAddress: {
           firstName: shippingAddress.firstName,
           lastName: shippingAddress.lastName,
@@ -786,34 +780,6 @@ const CheckoutForm = () => {
                   </select>
                   
                   {/* VAT Information */}
-                  {shippingAddress.country && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      {vatCalculation.customerType === 'B2C' && (
-                        <div className="flex items-center text-green-600">
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Irish VAT (23%) will be added to your order
-                        </div>
-                      )}
-                      {vatCalculation.customerType === 'B2B_EU' && (
-                        <div className="flex items-center text-blue-600">
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          EU Reverse Charge - No VAT charged (B2B transaction)
-                        </div>
-                      )}
-                      {vatCalculation.customerType === 'B2B_NON_EU' && (
-                        <div className="flex items-center text-purple-600">
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Export Sale - No VAT charged
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -824,7 +790,7 @@ const CheckoutForm = () => {
               
               <div className="space-y-3">
                 {[
-                  { value: 'standard', label: 'Standard Shipping', price: 5.99, time: '5-7 business days' },
+                  { value: 'standard', label: 'Standard Shipping', price: 0, time: '5-7 business days' },
                   { value: 'express', label: 'Express Shipping', price: 15.99, time: '2-3 business days' },
                   { value: 'overnight', label: 'Overnight Shipping', price: 29.99, time: '1 business day' }
                 ].map((method) => (
@@ -843,7 +809,9 @@ const CheckoutForm = () => {
                           <div className="font-medium">{method.label}</div>
                           <div className="text-sm text-gray-500">{method.time}</div>
                         </div>
-                        <div className="font-medium">{formatPrice(method.price)}</div>
+                        <div className="font-medium">
+                          {method.value === 'standard' ? 'Free' : formatPrice(method.price)}
+                        </div>
                       </div>
                     </div>
                   </label>
@@ -1008,7 +976,7 @@ const CheckoutForm = () => {
               {/* Totals */}
               <div className="space-y-3 pt-4 border-t">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal (ex VAT)</span>
+                  <span className="text-gray-600">Subtotal</span>
                   <span className="font-medium">{formatPrice(subtotal)}</span>
                 </div>
                 {discountAmount > 0 && (
@@ -1018,29 +986,9 @@ const CheckoutForm = () => {
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping (ex VAT)</span>
-                  <span className="font-medium">{formatPrice(baseShipping)}</span>
+                  <span className="text-gray-600">Shipping</span>
+                  <span className="font-medium">{shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
                 </div>
-                {vatAmount > 0 && (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">VAT ({vatCalculation.customerType === 'B2C' ? '23%' : 'Various'})</span>
-                      <span className="font-medium">{formatPrice(vatAmount)}</span>
-                    </div>
-                    {vatCalculation.reverseCharge && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">EU Reverse Charge Applied</span>
-                        <span className="text-gray-500">€0.00</span>
-                      </div>
-                    )}
-                  </>
-                )}
-                {vatCalculation.customerType === 'B2B_NON_EU' && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Export Sale (No VAT)</span>
-                    <span className="text-gray-500">€0.00</span>
-                  </div>
-                )}
                 <div className="border-t pt-3">
                   <div className="flex justify-between">
                     <span className="text-lg font-semibold text-gray-900">Total</span>
