@@ -228,7 +228,7 @@ const DesignSelector = ({ selectedDesign, onSelectDesign, onPreview }) => {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-96 overflow-y-auto">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {designs.map((design) => (
           <div
             key={design.id}
