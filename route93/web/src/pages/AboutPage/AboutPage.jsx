@@ -4,8 +4,8 @@ import { Metadata } from '@redwoodjs/web'
 const AboutPage = () => {
   return (
     <>
-      <Metadata 
-        title="About Us - Route93" 
+      <Metadata
+        title="About Us - Route93"
         description="Learn about Route93's mission to provide premium quality products and exceptional customer service. Discover our story, values, and commitment to excellence."
       />
 
@@ -18,12 +18,12 @@ const AboutPage = () => {
                 About <span className="text-green-400">Route93</span>
               </h1>
               <p className="text-xl text-purple-100 max-w-3xl mx-auto">
-                Your trusted partner in discovering premium products that enhance your lifestyle. 
+                Your trusted partner in discovering premium products that enhance your lifestyle.
                 Since our founding, we've been committed to quality, service, and customer satisfaction.
               </p>
             </div>
           </div>
-          
+
           {/* Wave separator */}
           <div className="relative">
             <svg className="w-full h-12 text-gray-50" viewBox="0 0 1200 120" preserveAspectRatio="none">
@@ -53,26 +53,26 @@ const AboutPage = () => {
                 <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Story</h2>
                 <div className="prose prose-lg text-gray-600 space-y-4">
                   <p>
-                    Route93 began as a simple idea: to create a destination where quality meets convenience. 
-                    Founded with a passion for discovering exceptional products, we've grown from a small startup 
+                    Route93 began as a simple idea: to create a destination where quality meets convenience.
+                    Founded with a passion for discovering exceptional products, we've grown from a small startup
                     to a trusted e-commerce platform serving customers worldwide.
                   </p>
                   <p>
-                    Our journey started when our founders realized there was a gap in the market for a platform 
-                    that truly prioritized customer experience while offering carefully curated, high-quality products. 
-                    Every item in our catalog is selected with care, ensuring it meets our rigorous standards for 
+                    Our journey started when our founders realized there was a gap in the market for a platform
+                    that truly prioritized customer experience while offering carefully curated, high-quality products.
+                    Every item in our catalog is selected with care, ensuring it meets our rigorous standards for
                     quality, functionality, and value.
                   </p>
                   <p>
-                    Today, Route93 continues to evolve, always with our customers at the heart of everything we do. 
-                    We're not just an online store – we're your partner in discovering products that enhance your 
+                    Today, Route93 continues to evolve, always with our customers at the heart of everything we do.
+                    We're not just an online store – we're your partner in discovering products that enhance your
                     lifestyle and bring joy to your everyday experiences.
                   </p>
                 </div>
               </div>
               <div className="relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop&q=80" 
+                <img
+                  src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop&q=80"
                   alt="Route93 Story"
                   className="rounded-lg shadow-lg"
                 />
@@ -91,7 +91,7 @@ const AboutPage = () => {
                 We're driven by a clear purpose and guided by our vision for the future of e-commerce.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Mission */}
               <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-8 rounded-lg">
@@ -104,7 +104,7 @@ const AboutPage = () => {
                   <h3 className="text-2xl font-bold text-purple-900">Our Mission</h3>
                 </div>
                 <p className="text-purple-800 text-lg">
-                  To provide exceptional products and unparalleled customer service, making quality accessible 
+                  To provide exceptional products and unparalleled customer service, making quality accessible
                   to everyone while building lasting relationships with our community.
                 </p>
               </div>
@@ -121,7 +121,7 @@ const AboutPage = () => {
                   <h3 className="text-2xl font-bold text-green-900">Our Vision</h3>
                 </div>
                 <p className="text-green-800 text-lg">
-                  To become the world's most trusted e-commerce platform, known for innovation, 
+                  To become the world's most trusted e-commerce platform, known for innovation,
                   sustainability, and creating meaningful connections between people and products they love.
                 </p>
               </div>
@@ -138,7 +138,7 @@ const AboutPage = () => {
                 These values guide every decision we make and every interaction we have with our customers.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {[
                 {
@@ -199,13 +199,13 @@ const AboutPage = () => {
                 Behind Route93 is a passionate team of professionals dedicated to delivering exceptional experiences.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
               {[
                 {
                   name: 'Paul',
                   role: 'Founder & CEO',
-                  image: '/images/logo.png',
+                  image: '/images/CEO Paul.jpeg',
                   bio: 'Visionary leader with 15+ years in e-commerce, passionate about customer experience and innovation.'
                 },
                 {
@@ -218,8 +218,8 @@ const AboutPage = () => {
               ].map((member, index) => (
                 <div key={index} className="text-center">
                   <div className="relative mb-4">
-                    <img 
-                      src={member.image} 
+                    <img
+                      src={member.image}
                       alt={member.name}
                       className="w-32 h-32 rounded-full mx-auto object-cover"
                     />
@@ -239,7 +239,7 @@ const AboutPage = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl font-bold mb-4">Ready to Experience Route93?</h2>
             <p className="text-xl text-purple-100 mb-8 max-w-2xl mx-auto">
-              Join thousands of satisfied customers who trust Route93 for their shopping needs. 
+              Join thousands of satisfied customers who trust Route93 for their shopping needs.
               Discover quality products and exceptional service today.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

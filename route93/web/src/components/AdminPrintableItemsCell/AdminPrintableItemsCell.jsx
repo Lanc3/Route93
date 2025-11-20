@@ -1,3 +1,5 @@
+import { useMutation } from '@redwoodjs/web'
+
 export const QUERY = gql`
   query AdminPrintableItemsQuery(
     $search: String
@@ -15,6 +17,14 @@ export const QUERY = gql`
       status
       createdAt
       updatedAt
+    }
+  }
+`
+
+const DELETE_MUTATION = gql`
+  mutation DeletePrintableItem($id: Int!) {
+    deletePrintableItem(id: $id) {
+      id
     }
   }
 `
@@ -62,7 +72,23 @@ export const Failure = ({ error }) => (
   </div>
 )
 
-export const Success = ({ printableItems }) => {
+export const Success = ({ printableItems }, { queryResult }) => {
+  const [deleteMutation] = useMutation(DELETE_MUTATION, {
+    refetchQueries: [{ query: QUERY, variables: queryResult?.variables }],
+    awaitRefetchQueries: true
+  })
+
+  const handleDelete = async (id, name) => {
+    if (confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
+      try {
+        await deleteMutation({ variables: { id } })
+      } catch (error) {
+        console.error('Error deleting printable item:', error)
+        alert('Failed to delete item. Please try again.')
+      }
+    }
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
       <div className="overflow-x-auto">
@@ -141,11 +167,7 @@ export const Success = ({ printableItems }) => {
                   </a>
                   <button
                     className="text-red-600 hover:text-red-900"
-                    onClick={() => {
-                      if (confirm('Are you sure you want to delete this printable item?')) {
-                        // TODO: Implement delete functionality
-                      }
-                    }}
+                    onClick={() => handleDelete(item.id, item.name)}
                   >
                     Delete
                   </button>
