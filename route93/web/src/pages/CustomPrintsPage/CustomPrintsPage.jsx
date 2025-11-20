@@ -45,7 +45,7 @@ const CustomPrintsPage = () => {
   const { isAuthenticated } = useAuth()
   const { addItem } = useCart()
 
-  const PRINT_FEE = 20 // €20 print fee
+  const PRINT_FEE = 10 // €10 print fee
 
   const totalPrice = selectedProduct ? selectedProduct.price + PRINT_FEE : 0
 
@@ -107,7 +107,7 @@ const CustomPrintsPage = () => {
               </h1>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                 Choose a design and product to create your unique custom print.
-                We add a €20 printing fee to all custom orders.
+                We add a €10 printing fee to all custom orders.
               </p>
             </div>
           </div>

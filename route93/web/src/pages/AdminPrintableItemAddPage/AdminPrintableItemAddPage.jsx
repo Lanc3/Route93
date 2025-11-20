@@ -219,7 +219,7 @@ const AdminPrintableItemAddPage = () => {
                       placeholder="0.00"
                     />
                     <p className="mt-1 text-sm text-gray-500">
-                      Customers will pay this amount plus €20 printing fee
+                      Customers will pay this amount plus €10 printing fee
                     </p>
                   </div>
 
